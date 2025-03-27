@@ -46,10 +46,10 @@ export type LexiconToZodOptions = {
   typeParserDict?: Partial<LexiconTypeParserMap>;
   // Provide a Lexicon schema dictionary for `ref` lookups.
   lexiconDict?: Record<string, Record<string, any>>;
-  // Dictionary of options applied to specific Lexicon properties.
+  // Dictionary of options applied to specific schema properties.
   pathOptions?: {
-    // The full dot notated path of the target Lexicon property.
-    [lexiconFieldPath: string]: PathOptions;
+    // The full dot-notated path of the target schema property.
+    [schemaPropertyPath: string]: PathOptions;
   };
 };
 
