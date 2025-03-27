@@ -126,4 +126,7 @@ const schemaMap = lexiconToZod(lexicon, { typeParserDict });
 
 `typeParserDict` should be of type `LexiconTypeParserMap` and has priority over included parser dictionary.
 
-Parser dictionary keys are inferred from Lexicon `type` values, so any unsupported types can be added via `typeParserDict`. When your type key is inferred your custom `parser will automatically be invoked.
+Parser dictionary keys are inferred from Lexicon `type` values, so any unsupported types can be added to `typeParserDict`. When your type key is encountered your custom parser will automatically be invoked.
+
+### $default Parser
+If no parser can be matched to a Lexicon `type` value the `$default` type parser will be used. The included `$default` parser will simply return `z.any()`, but you can override `$default` via the `typeParserDict` option to provide your own custom implementation.
