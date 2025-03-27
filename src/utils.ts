@@ -2,7 +2,6 @@ import {
   ArrayPath,
   LexiconToZodOptions,
   ObjectPath,
-  LexiconPrimaryType,
   UnionPath,
   WrappedZodOptional,
   WrappedZodSchema,
@@ -18,9 +17,9 @@ import { ZodOptional, ZodSchema } from "zod";
  */
 export function setPathOptionToIsRequired(
   lexiconPropPath: string,
-  options?: LexiconToZodOptions
+  options: LexiconToZodOptions
 ): LexiconToZodOptions {
-  options = options || {};
+  options = options;
   options.pathOptions = options.pathOptions || {};
   options.pathOptions[lexiconPropPath] =
     options.pathOptions[lexiconPropPath] || {};
