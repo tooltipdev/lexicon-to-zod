@@ -1,0 +1,41 @@
+{
+  "name": "lexicon-to-zod",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tooltipdev/lexicon-to-zod"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "exports": {
+    "require": "./dist/bundle.cjs.js",
+    "import": "./dist/bundle.esm.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup --config"
+  },
+  "types": "dist/index.d.ts",
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "eslint": "^9.22.0",
+    "prettier": "^3.5.3",
+    "rollup": "^4.36.0",
+    "tslib": "^2.8.1",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.1"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  }
+}
