@@ -16,16 +16,16 @@ Pass a full Lexicon JSON definition to the default export.
 import lexiconToZod from "lexicon-to-zod";
 
 const lexicon = {
-	"lexicon": 1,
-	"id": "com.atproto.some.cool.lexicon",
-	"defs": {
-		"main": {
-			"type": "procedure",
-			"input": {...},
-			"output": {...},
-		},
-		"someOtherDef": {...}
-	}
+  "lexicon": 1,
+  "id": "com.atproto.some.cool.lexicon",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "input": {...},
+      "output": {...},
+    },
+    "someOtherDef": {...}
+  }
 };
 
 const schemaMap = lexiconToZod(lexicon);
@@ -38,16 +38,16 @@ The returned map will include Zod schemas for each `defs` entry from the provide
 
 ```
 {
-	"lexicon": 1,
-	"id": "com.atproto.some.cool.lexicon",
-	"defs": {
-		"main": {
-			"type": "procedure",
-			"input": {...},
-			"output": {...},
-		},
-		"someOtherDef": {...}
-	}
+  "lexicon": 1,
+  "id": "com.atproto.some.cool.lexicon",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "input": {...},
+      "output": {...},
+    },
+    "someOtherDef": {...}
+  }
 }
 ```
 
@@ -55,13 +55,13 @@ The returned map will include Zod schemas for each `defs` entry from the provide
 
 ```
 {
-	defs: {
-		main: {
-			input: z.object({...}),
-			output: z.object({...}),
-		},
-		someOtherDef: z.object({...})
-	}
+  defs: {
+    main: {
+      input: z.object({...}),
+      output: z.object({...}),
+    },
+    someOtherDef: z.object({...})
+  }
 }
 ```
 
@@ -98,7 +98,7 @@ import { schemaDict } from "@atproto/api/dist/client/lexicons";
 
 // Convert dictionary keys to NSID format.
 const lexiconDict: Record<string, any> =
-	Object.values(schemaDict).reduce((acc, l) => ({[l.id]: l, ...acc}),  {});
+  Object.values(schemaDict).reduce((acc, l) => ({[l.id]: l, ...acc}),  {});
 
 const lexicon = lexiconDict["app.bsky.feed.post"];
 const schemaMap = lexiconToZod(lexicon, { lexiconDict });
@@ -112,12 +112,12 @@ Each supported Lexicon type will be converted to a matching Zod schema type.
 
 ```
 {
-	"type": "object",
-	"properties": {
-		"foo": {
-			"type": "string"
-		}
-	}
+  "type": "object",
+  "properties": {
+    "foo": {
+      "type": "string"
+    }
+  }
 }
 ```
 
@@ -134,8 +134,8 @@ import lexiconToZod from "lexicon-to-zod";
 
 const lexicon = ...;
 const typeParserDict = {
-	string: () => {},
-	someCustomType: () => {}
+  string: () => {},
+  someCustomType: () => {}
 };
 
 const schemaMap = lexiconToZod(lexicon, { typeParserDict });
@@ -161,50 +161,54 @@ Each key in the map is a dot-notated path pointing to the output schema field, a
 import lexiconToZod from "lexicon-to-zod";
 
 const lexicon = {
-	"lexicon": 1,
-	"id": "com.atproto.some.cool.lexicon",
-	"defs": {
-		"main": {
-			"type": "procedure",
-			"input": {
-				"schema": {
-					"properties": {
-						"foo": { "type": "string" }
-					}
-				}
-			},
-			"output": {...},
-		},
-		"someOtherDef": {...}
-	}
+  "lexicon": 1,
+  "id": "com.atproto.some.cool.lexicon",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "input": {
+      "schema": {
+          "properties": {
+            "foo": { "type": "string" }
+          }
+        }
+      },
+      "output": {...},
+    },
+    "someOtherDef": {...}
+  }
 };
 
 const pathOptions = {
-	"main.input.foo": {
-		"isRequired": true, // force field to be required
-		"override": z.number() // override deeply nested schema
-	},
-	"someOtherDef.someOtherProp: {
-		"override": null // omit Lexicon field from output schema
-	}
+  "main.input.foo": {
+    "isRequired": true, // force field to be required
+    "override": z.number() // override deeply nested schema
+  },
+  "someOtherDef.someOtherProp: {
+    "override": null // omit Lexicon field from output schema
+  }
 };
 
 const schemaMap = lexiconToZod(lexicon, { pathOptions });
 ```
+
 ### Special Field Paths
+
 When writing dot-notated paths for targeting with `pathOptions` you need to use special path structures for certain types and subtypes.
 
-| Target field type | Path structure 					|
-| ----------------- | ----------------------- |
-| Array Elements    | `somePath.__array__`    |
-| Union Subtypes    | `somePath.__union__.0-n`|
+| Target field type | Path structure           |
+| ----------------- | ------------------------ |
+| Array Elements    | `somePath.__array__`     |
+| Union Subtypes    | `somePath.__union__.0-n` |
 
 ## Contributing
+
 Do it.
 
 Fork the repo and open a pull request.
 
 ## Notes
+
 - Review `src/types.ts` file for a better understanding of options.
 - If you don't like the way a type parser works, override it with `typeParserDict`.
 - If a type parser isn't supported, add it to `typeParserDict`.
