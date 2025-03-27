@@ -63,27 +63,30 @@ const schemaMap = lexiconToZod(lexicon, { lexiconDict });
 
 The dictionary should be in the format `{[NSID]: FullLexiconDocument}`.
 
-### SDK Derived Dictionary
+### SDK Lexicon Dictionary
 
 You can utilize the built-in `@atproto/api` Lexicons to handle most standard behavior.
+
+#### Install Dependency
 `npm i --save-dev @atproto/api`
+#### Utilize built-in Lexicons
 
 ```
 import lexiconToZod from "lexicon-to-zod";
 
-// Import `@atproto/api` Lexicon schema dictionary.
+// Import schema dictionary.
 import { schemaDict } from "@atproto/api/dist/client/lexicons";
 
-// Convert `@atproto/api` map keys to NSID format.
+// Convert dictionary keys to NSID format.
 const lexiconDict: Record<string, any> = Object.values(schemaDict).reduce(
   (acc, l) => ({ [l.id]: l, ...acc }),
   {}
 );
 
-// Select Lexicon from the `@atproto/api` Lexicon map.
+// Select a Lexicon from the dictionary.
 const lexicon = lexiconDict["app.bsky.feed.post"];
 
-// Pass `@atproto/api` map to `lexicon-to-zod`.
+// Pass dictionary to `lexicon-to-zod`.
 const schemaMap = lexiconToZod(lexicon, { lexiconDict });
 ```
 
@@ -123,4 +126,4 @@ const schemaMap = lexiconToZod(lexicon, { typeParserDict });
 
 `typeParserDict` should be of type `LexiconTypeParserMap` and has priority over included parser dictionary.
 
-Parser dictionary keys are inferred from Lexicon `type` values, so any unsupported types can be added via `typeParserDict`. When your type key is inferred your custom parser will automatically be invoked.
+Parser dictionary keys are inferred from Lexicon `type` values, so any unsupported types can be added via `typeParserDict`. When your type key is inferred your custom `parser will automatically be invoked.
