@@ -79,29 +79,42 @@ export default function lexiconToZod(
       ) => {
         const path = `main.${key}`;
         setPathOptionToIsRequired(path, options);
-        defSchemaMap.defs.main[key] = defToSchema(
-          partial,
-          path,
-          mergedTypeParserMap,
-          options
-        );
+
+        // This is hacky.
+        if (!!partial.properties)
+          defSchemaMap.defs.main[key] = toObjectSchema(
+            partial,
+            path,
+            mergedTypeParserMap,
+            options
+          );
+        else
+          defSchemaMap.defs.main[key] = defToSchema(
+            partial,
+            path,
+            mergedTypeParserMap,
+            options
+          );
       };
 
       defSchemaMap.defs.main = {};
 
-      if (defValue.input)
+      if (defValue.input && defValue.input.schema)
         attachMainProp("input", defValue.input.schema, options);
 
-      if (defValue.output)
+      if (defValue.output && defValue.output.schema)
         attachMainProp("output", defValue.output.schema, options);
 
-      if (defValue.message)
+      if (defValue.message && defValue.message.schema)
         attachMainProp("message", defValue.message.schema, options);
 
       if (defValue.record) attachMainProp("record", defValue.record, options);
 
       if (defValue.parameters)
         attachMainProp("parameters", defValue.parameters, options);
+
+      if (!Object.keys(defSchemaMap.defs.main).length)
+        defSchemaMap.defs.main = z.never();
     } else {
       defSchemaMap.defs[defKey] = defToSchema(
         defValue,
