@@ -13,6 +13,7 @@ import {
   toUnionPath,
   refValueToNSID,
   refValueToDefKey,
+  setPathOptionToIsRequired,
 } from "./utils";
 import {
   LexiconToZodOptions,
@@ -54,7 +55,7 @@ export function extendSchema(
 }
 
 /**
- * Convenience method. Parse a Lexicon partial to a UniversalSchema.
+ * Parse a non-primary Lexicon structure to a UniversalSchema.
  * @param lexiconPartial Lexicon JSON partial
  * @param lexiconPropPath Lexicon property path
  * @param lexiconTypeParserMap LexiconTypeParser map
@@ -72,6 +73,105 @@ export function defToSchema(
     lexiconTypeParserMap[lexiconType] || lexiconTypeParserMap.$default;
 
   return parser(lexiconPartial, lexiconPropPath, lexiconTypeParserMap, options);
+}
+
+/**
+ * Parse a primary Lexicon partial to a map of UniversalSchema instances.
+ * The shape of the output schema will depend on the primary type.
+ * @param lexiconPartial Lexicon JSON partial
+ * @param lexiconPropPath Lexicon property path
+ * @param lexiconTypeParserMap LexiconTypeParser map
+ * @param options LexiconToZodOptions
+ * @returns UniversalSchema
+ */
+// export function primaryDefToSchema(
+//   lexiconPartial: Record<string, any>,
+//   lexiconPropPath: string,
+//   lexiconTypeParserMap: LexiconTypeParserMap,
+//   options?: LexiconToZodOptions
+// ) {
+//   const attachMainProp = (
+//     key: string,
+//     partial: Record<string, any>,
+//     options: LexiconToZodOptions
+//   ) => {
+//     const schemaMap: Record<string, UniversalSchema> = {};
+//     const path = `main.${key}`;
+//     setPathOptionToIsRequired(path, options);
+
+//     // This is hacky.
+//     if (!!partial.properties)
+//       schemaMap[key] = toObjectSchema(
+//         partial,
+//         path,
+//         lexiconTypeParserMap,
+//         options
+//       );
+//     else
+//       schemaMap[key] = defToSchema(
+//         partial,
+//         path,
+//         lexiconTypeParserMap,
+//         options
+//       );
+//   };
+
+//   defSchemaMap.defs.main = {};
+
+//   if (defValue?.input?.schema)
+//     attachMainProp("input", defValue.input.schema, options);
+
+//   if (defValue.output && defValue.output.schema)
+//     attachMainProp("output", defValue.output.schema, options);
+
+//   if (defValue.message && defValue.message.schema)
+//     attachMainProp("message", defValue.message.schema, options);
+
+//   if (defValue.record) attachMainProp("record", defValue.record, options);
+
+//   if (defValue.parameters)
+//     attachMainProp("parameters", defValue.parameters, options);
+
+//   if (!Object.keys(defSchemaMap.defs.main).length)
+//     defSchemaMap.defs.main = z.never();
+// }
+
+export function toRecordSchemaMap(
+  lexiconPartial: Record<string, any>,
+  lexiconPropPath: string,
+  lexiconTypeParserMap: LexiconTypeParserMap,
+  options?: LexiconToZodOptions
+) {
+  return {
+    key: z.literal(lexiconPartial.key),
+    record: lexiconTypeParserMap.object(
+      lexiconPartial,
+      toObjectPath(lexiconPropPath, "record"),
+      lexiconTypeParserMap,
+      options
+    ),
+  };
+}
+
+export function toQuerySchemaMap(
+  lexiconPartial: Record<string, any>,
+  lexiconPropPath: string,
+  lexiconTypeParserMap: LexiconTypeParserMap,
+  options?: LexiconToZodOptions
+) {
+  return {
+    parameters: lexiconTypeParserMap.object(
+      lexiconPartial.parameters,
+      toObjectPath(lexiconPropPath, "parameters"),
+      lexiconTypeParserMap,
+      options
+    ),
+    output: !lexiconPartial.output?.schema
+      ? z.never()
+      : z.object({
+        description: z.string().optional(),
+      })
+  };
 }
 
 export function toStringSchema(

@@ -46,7 +46,7 @@ const defaultTypeParserMap: LexiconTypeParserMap = {
  * @param lexicon Lexicon JSON definition
  * @returns UniversalSchema map
  */
-export default function lexiconToZod(
+export function lexiconToZod(
   lexicon: Record<string, any>,
   options: LexiconToZodOptions = {}
 ) {
