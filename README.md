@@ -67,7 +67,9 @@ The returned map will include Zod schemas for each `defs` entry from the provide
 
 ## Managing refs
 
-If your Lexicon contains `ref` types you must set the `followRefs` option to `true` if you want to convert references to nested schemas. You must pass a Lexicon dictionary via the `lexiconDict` option for Lexicon lookup. `lexiconDict` should be in the format `{[NSID]: FullLexiconDocument}`.
+If your Lexicon contains `ref` types you must set the `followRefs` option to `true` if you want them converted to Zod schemas. Additionally, you must pass a Lexicon dictionary via the `lexiconDict` option for Lexicon lookup.
+
+`lexiconDict` should be in the format `{[NSID]: FullLexiconDocument}`.
 
 ```
 import { lexiconToZod } from "lexicon-to-zod";
