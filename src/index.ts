@@ -6,11 +6,20 @@ import {
   toBooleanSchema,
   toNumberSchema,
   toObjectSchema,
+  toProcedureSchemaMap,
+  toQuerySchemaMap,
+  toRecordSchemaMap,
   toRefSchema,
   toStringSchema,
+  toSubscriptionSchemaMap,
   toUnionSchema,
 } from "./parsers";
-import { LexiconToZodOptions, LexiconTypeParserMap } from "./types";
+import {
+  LexiconToZodOptions,
+  PrimaryTypeParserMap,
+  PrimaryTypeSchema,
+  TypeParserMap,
+} from "./types";
 import { setPathOptionToIsRequired } from "./utils";
 
 /**
@@ -23,13 +32,20 @@ const toLexiconTypeParser =
   (
     lexiconPartial: Record<string, any>,
     lexiconPropPath: string,
-    lexiconTypeParserMap: LexiconTypeParserMap,
+    TypeParserMap: TypeParserMap,
     options?: LexiconToZodOptions
   ) =>
     parser(lexiconPartial, lexiconPropPath, options);
 
+const primaryTypeParserMap: PrimaryTypeParserMap = {
+  record: toRecordSchemaMap,
+  subscription: toSubscriptionSchemaMap,
+  query: toQuerySchemaMap,
+  procedure: toProcedureSchemaMap,
+};
+
 // Merge with `LexiconToZodOptions.typeParserDict` to produce block scoped `typeParserMap`.
-const defaultTypeParserMap: LexiconTypeParserMap = {
+const defaultTypeParserMap: TypeParserMap = {
   $default: () => z.any(),
   string: toLexiconTypeParser(toStringSchema),
   integer: toLexiconTypeParser(toNumberSchema),
@@ -50,8 +66,8 @@ export function lexiconToZod(
   lexicon: Record<string, any>,
   options: LexiconToZodOptions = {}
 ) {
-  const defSchemaMap: Record<string, any> = { defs: {} };
-  const mergedTypeParserMap = Object.assign(
+  const schemaMap: Record<string, any> = { defs: {} };
+  const typeParserMap = Object.assign(
     {},
     defaultTypeParserMap,
     options.typeParserDict || {}
@@ -67,63 +83,35 @@ export function lexiconToZod(
 
     setPathOptionToIsRequired(defKey, options);
 
-    /**
-     * Gather possible props for various primary Lexicon types.
-     * Note: This is the only place we process primary types or related properties.
-     */
-    if (defKey === "main") {
-      const attachMainProp = (
-        key: string,
-        partial: Record<string, any>,
-        options: LexiconToZodOptions
-      ) => {
-        const path = `main.${key}`;
-        setPathOptionToIsRequired(path, options);
-
-        // This is hacky.
-        if (!!partial.properties)
-          defSchemaMap.defs.main[key] = toObjectSchema(
-            partial,
-            path,
-            mergedTypeParserMap,
-            options
-          );
-        else
-          defSchemaMap.defs.main[key] = defToSchema(
-            partial,
-            path,
-            mergedTypeParserMap,
-            options
-          );
-      };
-
-      defSchemaMap.defs.main = {};
-
-      if (defValue.input && defValue.input.schema)
-        attachMainProp("input", defValue.input.schema, options);
-
-      if (defValue.output && defValue.output.schema)
-        attachMainProp("output", defValue.output.schema, options);
-
-      if (defValue.message && defValue.message.schema)
-        attachMainProp("message", defValue.message.schema, options);
-
-      if (defValue.record) attachMainProp("record", defValue.record, options);
-
-      if (defValue.parameters)
-        attachMainProp("parameters", defValue.parameters, options);
-
-      if (!Object.keys(defSchemaMap.defs.main).length)
-        defSchemaMap.defs.main = z.never();
-    } else {
-      defSchemaMap.defs[defKey] = defToSchema(
-        defValue,
-        defKey,
-        mergedTypeParserMap,
-        options
-      );
+    if (defOverride) {
+      schemaMap.defs[defKey] = defOverride;
     }
+
+    const { success: isPrimaryType } = PrimaryTypeSchema.safeParse(
+      defValue.type
+    );
+
+    const parser = isPrimaryType
+      ? primaryTypeParserMap[defValue.type as keyof PrimaryTypeParserMap]
+      : typeParserMap.object;
+
+    schemaMap.defs[defKey] = parser(defValue, defKey, typeParserMap, options);
   }
 
-  return defSchemaMap;
+  return schemaMap;
 }
+
+export const parsers = {
+  record: toRecordSchemaMap,
+  query: toQuerySchemaMap,
+  procedure: toProcedureSchemaMap,
+  subscription: toSubscriptionSchemaMap,
+  string: toStringSchema,
+  integer: toNumberSchema,
+  boolean: toBooleanSchema,
+  blob: toBlobRefSchema,
+  array: toArraySchema,
+  object: toObjectSchema,
+  union: toUnionSchema,
+  ref: toRefSchema,
+};
