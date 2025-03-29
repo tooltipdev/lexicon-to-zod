@@ -13,7 +13,7 @@ Review types/code for information beyond this README.
 Pass a full Lexicon JSON definition to the default export.
 
 ```
-import lexiconToZod from "lexicon-to-zod";
+import { lexiconToZod } from "lexicon-to-zod";
 
 const lexicon = {
   "lexicon": 1,
@@ -65,20 +65,21 @@ The returned map will include Zod schemas for each `defs` entry from the provide
 }
 ```
 
-## Optional Lexicon Dictionary
+## Managing refs
 
-If your Lexicon contains `ref` types you must pass a Lexicon dictionary via the `lexiconDict` option for Lexicon lookup.
+If your Lexicon contains `ref` types you must set the `followRefs` option to `true` if you want to convert references to nested schemas. You must pass a Lexicon dictionary via the `lexiconDict` option for Lexicon lookup. `lexiconDict` should be in the format `{[NSID]: FullLexiconDocument}`.
 
 ```
-import lexiconToZod from "lexicon-to-zod";
+import { lexiconToZod } from "lexicon-to-zod";
 
 const lexiconDict = {...};
 const lexicon = lexiconDict["com.atproto.some.cool.lexicon"];
 const schemaMap = lexiconToZod(lexicon, { lexiconDict });
 
 ```
+If the Lexicon graph you are trying to convert contains circular references **your code will throw errors**.
 
-`lexiconDict` should be in the format `{[NSID]: FullLexiconDocument}`.
+You will need to manage the circular reference with additional logic, or consider writing your own type parsers or schemas using `z.lazy`.
 
 ### SDK Lexicon Dictionary
 
@@ -91,7 +92,7 @@ You can utilize the built-in `@atproto/api` Lexicons to handle most standard beh
 **Utilize built-in Lexicons**
 
 ```
-import lexiconToZod from "lexicon-to-zod";
+import { lexiconToZod } from "lexicon-to-zod";
 
 // Import Lexicon dictionary.
 import { schemaDict } from "@atproto/api/dist/client/lexicons";
@@ -130,7 +131,7 @@ z.object({foo: z.string()})
 You can utilize the `typeParserDict` option to override a type parser, or add an unsupported type parser.
 
 ```
-import lexiconToZod from "lexicon-to-zod";
+import { lexiconToZod } from "lexicon-to-zod";
 
 const lexicon = ...;
 const typeParserDict = {
@@ -141,7 +142,7 @@ const typeParserDict = {
 const schemaMap = lexiconToZod(lexicon, { typeParserDict });
 ```
 
-`typeParserDict` should be of type `LexiconTypeParserMap`. Provided type parsers will has priority over the included parser dictionary.
+`typeParserDict` should be of type `TypeParserMap`. Provided type parsers will has priority over the included parser dictionary.
 
 Parser dictionary keys are inferred from Lexicon `type` values, so any unsupported types can be added to `typeParserDict`. When your type is encountered during schema generation your custom type parser will be invoked.
 
@@ -158,7 +159,7 @@ You can override `$default` via the `typeParserDict` option to provide your own 
 Each key in the map is a dot-notated path pointing to the output schema field, and map values are of type `PathOptions`.
 
 ```
-import lexiconToZod from "lexicon-to-zod";
+import { lexiconToZod } from "lexicon-to-zod";
 
 const lexicon = {
   "lexicon": 1,
