@@ -144,7 +144,7 @@ const typeParserDict = {
 const schemaMap = lexiconToZod(lexicon, { typeParserDict });
 ```
 
-`typeParserDict` should be of type `TypeParserMap`. Provided type parsers will have priority over the included parser dictionary.
+`typeParserDict` should be of type `TypeParserMap`. Provided type parsers will have priority over the built-in parser dictionary.
 
 Parser dictionary keys are inferred from Lexicon `type` values, so any unsupported types can be added to `typeParserDict`. When your type is encountered during schema generation your custom type parser will be invoked.
 
