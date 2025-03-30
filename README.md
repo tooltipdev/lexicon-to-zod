@@ -2,7 +2,7 @@
 
 Convert Lexicon JSON to Zod schemas.
 
-Review types/code for information beyond this README.
+Review types and code for information beyond this README.
 
 ## Installation
 
@@ -10,7 +10,9 @@ Review types/code for information beyond this README.
 
 ## Basic Usage
 
-Pass a full Lexicon JSON definition to the default export.
+### Parsing Full Lexicon Documents
+
+You can generate a map of Zod schemas for a full Lexicon document via the `lexiconToZod` method.
 
 ```
 import { lexiconToZod } from "lexicon-to-zod";
@@ -32,9 +34,7 @@ const schemaMap = lexiconToZod(lexicon);
 
 ```
 
-The returned map will include Zod schemas for each `defs` entry from the provided Lexicon.
-
-**Lexicon JSON**
+#### Input Lexicon Document
 
 ```
 {
@@ -42,56 +42,133 @@ The returned map will include Zod schemas for each `defs` entry from the provide
   "id": "com.atproto.some.cool.lexicon",
   "defs": {
     "main": {
-      "type": "procedure",
-      "input": {...},
-      "output": {...},
+      "type": "procedure",{...},
+      "input": { schema: {...} },
+      "output": { schema: {...} },
     },
     "someOtherDef": {...}
   }
 }
 ```
 
-**Output Schema Map**
+#### Output Zod Schema Map
 
 ```
 {
   defs: {
     main: {
-      input: z.object({...}),
-      output: z.object({...}),
+      input: { schema: z.object({...}) },
+      output: { schema: z.object({...}) },
     },
     someOtherDef: z.object({...})
   }
 }
 ```
 
+### Parsing Lexicon Partials
+
+You can generate Zod schemas for subsections of Lexicon documents by utilizing built-in type parsers. The output will be an individual Zod schema instead of a map of Zod schemas.
+
+```
+import { parsers } from "lexicon-to-zod";
+
+const lexicon = {
+  "lexicon": 1,
+  "id": "com.atproto.some.cool.lexicon",
+  "defs": {
+    "main": {...},
+    "someOtherDef": {
+      "type": "object",
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      }
+    }
+  }
+};
+
+const { object: objectParser } = parsers();
+const schema = objectParser(lexicon.defs.someOtherDef);
+
+```
+
+#### Input Lexicon Partial
+
+```
+{
+  "type": "object",
+  "properties": {
+    "foo": {
+      "type": "string"
+    }
+  }
+}
+```
+
+#### Output Zod Schema
+
+```
+z.object({
+  foo: z.string()
+})
+```
+
 ## Managing refs
 
-If your Lexicon contains `ref` types you must set the `followRefs` option to `true` if you want them converted to Zod schemas. Additionally, you must pass a Lexicon dictionary via the `lexiconDict` option for Lexicon lookup.
+Some Lexicon types contain references to other Lexicon definitions, for example `ref` type values and `union.refs` values. In these cases, referenced Lexicons need to be gathered to fulfil schema generation, or a placeholder schema will be provided.
 
-`lexiconDict` should be in the format `{[NSID]: FullLexiconDocument}`.
+To enable Lexicon lookups you must set the `followRefs` option to `true`. A Lexicon dictionary _must_ be provided via the `lexiconDict` option for Lexicon reference lookup if `followRefs` is set to `true`.
+
+`lexiconDict` must be in the format `{[NSID]: FullLexiconDocument}`.
 
 ```
 import { lexiconToZod } from "lexicon-to-zod";
 
-const lexiconDict = {...};
+const lexiconDict = {
+  "com.atproto.some.cool.lexicon": {
+    main: {...},
+    "someOtherDef": {
+      "type": "ref",
+      "ref": "lex:com.atproto.some.other.lexicon#someCoolDef"
+    }
+  },
+  "com.atproto.some.other.lexicon": {
+    main: {...},
+    "someCoolDef": {...}
+  },
+};
+
 const lexicon = lexiconDict["com.atproto.some.cool.lexicon"];
-const schemaMap = lexiconToZod(lexicon, { lexiconDict });
+const schemaMap = lexiconToZod(lexicon, {
+  followRefs: true
+  lexiconDict,
+});
 
 ```
-If the Lexicon graph you are trying to convert contains circular references **your code will throw errors**.
 
-You will need to manage the circular reference with additional logic, or consider writing your own type parsers or schemas using `z.lazy`.
+#### `ref` Type
+
+If your Lexicon contains `ref` types you must set the `followRefs` option to `true` if you want them converted to Zod schemas. If the `followRefs` option is omitted, `ref` field types will be converted to `z.any()`.
+
+#### Union types
+
+If your Lexicon contains `union` types you must set the `followRefs` option to `true` if you want its subtypes converted to Zod schemas. If the `followRefs` option is omitted, `union` subtype schemas will be converted to `z.any()`.
+
+### Circular References
+If the Lexicon graph you are trying to convert contains circular references _your code will throw errors_. You will need to manage the circular reference with additional logic.
+
+Consider writing your own type parsers or schemas using `z.lazy`.
 
 ### SDK Lexicon Dictionary
 
-You can utilize the built-in `@atproto/api` Lexicons to handle most standard behavior.
+You can pass the built-in `@atproto/api` Lexicon map as `lexiconDict` to handle most standard behavior.
 
-**Install Dependency**
+#### Install Dependency
 
 `npm i @atproto/api`
 
-**Utilize built-in Lexicons**
+#### Import built-in Lexicons
 
 ```
 import { lexiconToZod } from "lexicon-to-zod";
@@ -109,28 +186,7 @@ const schemaMap = lexiconToZod(lexicon, { lexiconDict });
 
 ## Type Handling
 
-Each supported Lexicon type will be converted to a matching Zod schema type.
-
-**Lexicon Partial**
-
-```
-{
-  "type": "object",
-  "properties": {
-    "foo": {
-      "type": "string"
-    }
-  }
-}
-```
-
-**lexicon-to-zod Output**
-
-```
-z.object({foo: z.string()})
-```
-
-You can utilize the `typeParserDict` option to override a type parser, or add an unsupported type parser.
+Each supported Lexicon type will be converted to a matching Zod schema type. You can utilize the `typeParserDict` option to override a type parser, or add an unsupported type parser.
 
 ```
 import { lexiconToZod } from "lexicon-to-zod";
@@ -167,26 +223,21 @@ const lexicon = {
   "lexicon": 1,
   "id": "com.atproto.some.cool.lexicon",
   "defs": {
-    "main": {
-      "type": "procedure",
-      "input": {
-      "schema": {
-          "properties": {
-            "foo": { "type": "string" }
-          }
-        }
-      },
-      "output": {...},
-    },
+    "main": {...},
+    "someDef": {...}
     "someOtherDef": {...}
   }
 };
 
 const pathOptions = {
-  "main.input.foo": {
-    "isRequired": true, // force field to be required
-    "override": z.number() // override deeply nested schema
+  "someDef.someProp: {
+    "metadata": {...}, // arbitrary metadata attached to output schema
+    "additionalProps": {...}, // additional properties for output 'object' schemas,
+    "isRequired": true // force property to be required
   },
+  "someOtherDef.someProp: {
+    "override": z.string() // override output schema
+  }
   "someOtherDef.someOtherProp: {
     "override": null // omit Lexicon field from output schema
   }
@@ -206,9 +257,7 @@ When writing dot-notated paths for targeting with `pathOptions` you need to use 
 
 ## Contributing
 
-Do it.
-
-Fork the repo and open a pull request.
+All contributions are appreciated. Fork the repo and open a pull request.
 
 ## Notes
 
