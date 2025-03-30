@@ -1,18 +1,10 @@
 import { ZodSchema, ZodOptional, z } from "zod";
 
-/**
- * Provide additional functionality to Zod schemas.
- *
- * Mostly used for adding developer quality of life metadata to Zod schemas.
- */
+// Provide additional functionality to Zod schemas via mixin.
 export type ZodSchemaWrapper = { meta: () => Record<string, any> };
 export type WrappedZodSchema<T extends ZodSchema> = ZodSchemaWrapper & T;
 
-/**
- * We use ZodOptional in a hacky way here.
- * It's being used to haphazardly gesture towards Zod schemas with an outer wrapper of some
- * kind (ie it includes "_innerType"). This would apply to Zod types such as ZodOptional and ZodDefault.
- */
+// Hacky! Using ZodOptional to haphazardly gesture towards Zod schemas with an inner type.
 export type WrappedZodOptional<T extends ZodSchema> = ZodOptional<
   WrappedZodSchema<T>
 >;
@@ -26,59 +18,53 @@ export type UniversalSchema =
   | ZodOptional<ZodSchema>
   | WrappedSchema<ZodSchema>;
 
+export type LexiconTypeParser = (
+  lexiconPartial: Record<string, any>,
+  path?: string,
+  options?: LexiconToZodOptions
+) => UniversalSchema;
+
+export type TypeParserMap = {
+  $default: LexiconTypeParser;
+  boolean: LexiconTypeParser;
+  integer: LexiconTypeParser;
+  string: LexiconTypeParser;
+  blob: LexiconTypeParser;
+  object: LexiconTypeParser;
+  array: LexiconTypeParser;
+  union: LexiconTypeParser;
+  ref: LexiconTypeParser;
+  null: LexiconTypeParser;
+  bytes: LexiconTypeParser;
+  unknown: LexiconTypeParser;
+  "cid-link": LexiconTypeParser;
+  [type: string]: LexiconTypeParser;
+};
+
 export type PathOptions = {
-  /**
-   * Override the Zod schema for a Lexicon property with your
-   * own Zod schema.
-   *
-   * Providing `null` will omit the property from the output Zod schema.
-   */
+  // Override Zod schema for target Lexicon property, or provide `null` to omit property.
   override?: UniversalSchema | null;
-  // Additional metadata to be merged via zodSchemaWrapperMixin (ie ZodSchemaWrapper)
+  // Additional metadata added to Zod schema via mixin.
   metadata?: Record<string, any>;
-  // Additional properties added to path targeted Object schemas.
+  // Additional properties added to object Zod schmea.
   additionalProps?: Record<string, UniversalSchema>;
-  // `.isOptional()` will be invoked on path Zod schemas not flagged with `isRequired`.
+  // `.isOptional()` will be invoked on Zod schemas if not set to 'true'.
   isRequired?: boolean;
+  [option: string]: any;
 };
 
 export type LexiconToZodOptions = {
+  // Resolve ref values to Lexicon schemas if set to 'true'
   followRefs?: boolean;
+  // Dictionary of type-specific LexiconTypeParser implementations.
   typeParserDict?: Partial<TypeParserMap>;
-  // Provide a Lexicon schema dictionary for `ref` lookups.
+  // Lexicon schema dictionary used for `ref` lookups.
   lexiconDict?: Record<string, Record<string, any>>;
-  // Dictionary of options applied to specific schema properties.
+  // Dictionary of options applied to path targeted schemas.
   pathOptions?: {
-    // The full dot-notated path of the target schema property.
+    // The full dot-notated path of the target schema.
     [path: string]: PathOptions;
   };
-};
-
-export type LexiconTypeParser<T> = (
-  lexiconPartial: Record<string, any>,
-  lexiconPropPath: string,
-  lexiconTypeParserMap: TypeParserMap,
-  options?: LexiconToZodOptions
-) => T;
-
-export type PrimaryTypeParserMap = {
-  record: LexiconTypeParser<Record<string, any>>;
-  query: LexiconTypeParser<Record<string, any>>;
-  procedure: LexiconTypeParser<Record<string, any>>;
-  subscription: LexiconTypeParser<Record<string, any>>;
-};
-
-export type TypeParserMap = {
-  $default: LexiconTypeParser<UniversalSchema>;
-  boolean: LexiconTypeParser<UniversalSchema>;
-  integer: LexiconTypeParser<UniversalSchema>;
-  string: LexiconTypeParser<UniversalSchema>;
-  blob: LexiconTypeParser<UniversalSchema>;
-  object: LexiconTypeParser<UniversalSchema>;
-  array: LexiconTypeParser<UniversalSchema>;
-  union: LexiconTypeParser<UniversalSchema>;
-  ref: LexiconTypeParser<UniversalSchema>;
-  [type: string]: LexiconTypeParser<UniversalSchema>;
 };
 
 /**
