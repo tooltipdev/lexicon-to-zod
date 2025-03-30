@@ -1,9 +1,11 @@
 import { z } from "zod";
 import {
-  defToSchema,
   toArraySchema,
   toBlobRefSchema,
   toBooleanSchema,
+  toBytesSchema,
+  toCidLinkSchema,
+  toNullSchema,
   toNumberSchema,
   toObjectSchema,
   toProcedureSchemaMap,
@@ -13,48 +15,33 @@ import {
   toStringSchema,
   toSubscriptionSchemaMap,
   toUnionSchema,
+  toUnknownSchema,
 } from "./parsers";
-import {
-  LexiconToZodOptions,
-  PrimaryTypeParserMap,
-  PrimaryTypeSchema,
-  TypeParserMap,
-} from "./types";
-import { setPathOptionToIsRequired } from "./utils";
+import { LexiconToZodOptions, TypeParserMap } from "./types";
+import { getTypeParserSafe, setPathOptionToIsRequired } from "./utils";
 
-/**
- * Curry LexiconTypeParser which utilizes simplified LexiconTypeParser.
- * @param parser simplified LexiconTypeParser
- * @returns LexiconTypeParser
- */
-const toLexiconTypeParser =
-  (parser: Function) =>
-  (
-    lexiconPartial: Record<string, any>,
-    lexiconPropPath: string,
-    TypeParserMap: TypeParserMap,
-    options?: LexiconToZodOptions
-  ) =>
-    parser(lexiconPartial, lexiconPropPath, options);
-
-const primaryTypeParserMap: PrimaryTypeParserMap = {
-  record: toRecordSchemaMap,
-  subscription: toSubscriptionSchemaMap,
-  query: toQuerySchemaMap,
-  procedure: toProcedureSchemaMap,
-};
-
-// Merge with `LexiconToZodOptions.typeParserDict` to produce block scoped `typeParserMap`.
+// Merge with `LexiconToZodOptions.typeParserDict`.
 const defaultTypeParserMap: TypeParserMap = {
   $default: () => z.any(),
-  string: toLexiconTypeParser(toStringSchema),
-  integer: toLexiconTypeParser(toNumberSchema),
-  boolean: toLexiconTypeParser(toBooleanSchema),
-  blob: toLexiconTypeParser(toBlobRefSchema),
+  string: toStringSchema,
+  integer: toNumberSchema,
+  boolean: toBooleanSchema,
+  blob: toBlobRefSchema,
   array: toArraySchema,
   object: toObjectSchema,
   union: toUnionSchema,
   ref: toRefSchema,
+  null: toNullSchema,
+  bytes: toBytesSchema,
+  unknown: toUnknownSchema,
+  "cid-link": toCidLinkSchema,
+};
+
+const primaryTypeParserMap = {
+  record: toRecordSchemaMap,
+  subscription: toSubscriptionSchemaMap,
+  query: toQuerySchemaMap,
+  procedure: toProcedureSchemaMap,
 };
 
 /**
@@ -67,51 +54,62 @@ export function lexiconToZod(
   options: LexiconToZodOptions = {}
 ) {
   const schemaMap: Record<string, any> = { defs: {} };
-  const typeParserMap = Object.assign(
+  const typeParserDict = Object.assign(
     {},
     defaultTypeParserMap,
     options.typeParserDict || {}
   );
 
-  for (const [defKey, defValue] of <[[string, any]]>(
+  options.typeParserDict = typeParserDict;
+
+  for (const [defKey, defValue] of <[[string, Record<string, any>]]>(
     Object.entries(lexicon.defs)
   )) {
     const defOverride = options.pathOptions?.[defKey]?.override;
 
-    // Omit def if its root pathOptions path is set to `null`.
+    // Omit def if override is null.
     if (defOverride === null) continue;
-
-    setPathOptionToIsRequired(defKey, options);
 
     if (defOverride) {
       schemaMap.defs[defKey] = defOverride;
+      continue;
     }
 
-    const { success: isPrimaryType } = PrimaryTypeSchema.safeParse(
-      defValue.type
-    );
+    setPathOptionToIsRequired(defKey, options);
 
-    const parser = isPrimaryType
-      ? primaryTypeParserMap[defValue.type as keyof PrimaryTypeParserMap]
-      : typeParserMap.object;
+    // Note: this is the only place we handle primary types.
+    const parser =
+      primaryTypeParserMap[
+        defValue.type as keyof typeof primaryTypeParserMap
+      ] || getTypeParserSafe(options, "object", true);
 
-    schemaMap.defs[defKey] = parser(defValue, defKey, typeParserMap, options);
+    schemaMap.defs[defKey] = parser(defValue, defKey, options);
   }
 
   return schemaMap;
 }
 
-export const parsers = {
-  record: toRecordSchemaMap,
-  query: toQuerySchemaMap,
-  procedure: toProcedureSchemaMap,
-  subscription: toSubscriptionSchemaMap,
-  string: toStringSchema,
-  integer: toNumberSchema,
-  boolean: toBooleanSchema,
-  blob: toBlobRefSchema,
-  array: toArraySchema,
-  object: toObjectSchema,
-  union: toUnionSchema,
-  ref: toRefSchema,
-};
+/**
+ * Convenience factory method; returns a map of all built-in primary and non-primary type parsers.
+ * @returns Map of built-in parsers
+ */
+export function parsers() {
+  return {
+    record: toRecordSchemaMap,
+    query: toQuerySchemaMap,
+    procedure: toProcedureSchemaMap,
+    subscription: toSubscriptionSchemaMap,
+    string: toStringSchema,
+    integer: toNumberSchema,
+    boolean: toBooleanSchema,
+    blob: toBlobRefSchema,
+    array: toArraySchema,
+    object: toObjectSchema,
+    union: toUnionSchema,
+    ref: toRefSchema,
+    null: toNullSchema,
+    bytes: toBytesSchema,
+    unknown: toUnknownSchema,
+    "cid-link": toCidLinkSchema,
+  };
+}
