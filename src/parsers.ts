@@ -321,21 +321,6 @@ export function toObjectSchema(
   );
 }
 
-function refToSchema(
-  lexiconPartial: Record<string, any>,
-  lexiconPropPath: string = "",
-  options: LexiconToZodOptions = {}
-) {
-  const lexiconDefs: Record<string, any> | undefined =
-    options?.lexiconDict?.[refValueToNSID(lexiconPartial.ref)]?.defs;
-
-  if (!lexiconDefs) throw new Error("Cannot infer reference Lexicon");
-
-  const defKey = refValueToDefKey(lexiconPartial.ref);
-
-  return defToSchema(lexiconDefs[defKey], lexiconPropPath, options);
-}
-
 export function toUnionSchema(
   lexiconPartial: Record<string, any>,
   lexiconPropPath: string = "",
@@ -355,7 +340,7 @@ export function toUnionSchema(
 
       acc.push(
         subtypeOverride ||
-          refToSchema({ type: "ref", ref }, subtypePath, options)
+          getTypeParserSafe(options, 'ref', true)({ type: "ref", ref }, subtypePath, options)
       );
 
       return acc;
@@ -377,7 +362,14 @@ export function toRefSchema(
 ) {
   if (options?.followRefs !== true) return z.any();
 
-  return refToSchema(lexiconPartial, lexiconPropPath, options);
+  const lexiconDefs: Record<string, any> | undefined =
+    options?.lexiconDict?.[refValueToNSID(lexiconPartial.ref)]?.defs;
+
+  if (!lexiconDefs) throw new Error("Cannot infer reference Lexicon");
+
+  const defKey = refValueToDefKey(lexiconPartial.ref);
+
+  return defToSchema(lexiconDefs[defKey], lexiconPropPath, options);
 }
 
 export function toNullSchema(
