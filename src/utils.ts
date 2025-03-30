@@ -1,6 +1,7 @@
 import {
   ArrayPath,
   LexiconToZodOptions,
+  LexiconTypeParser,
   ObjectPath,
   UnionPath,
   WrappedZodOptional,
@@ -19,7 +20,6 @@ export function setPathOptionToIsRequired(
   lexiconPropPath: string,
   options: LexiconToZodOptions
 ): LexiconToZodOptions {
-  options = options;
   options.pathOptions = options.pathOptions || {};
   options.pathOptions[lexiconPropPath] =
     options.pathOptions[lexiconPropPath] || {};
@@ -113,4 +113,25 @@ export function toObjectPath(path: string, key: string): ObjectPath {
  */
 export function toUnionPath(path: string, index: number): UnionPath {
   return `${path}.__union__.${index}`;
+}
+
+/**
+ * Safely gather a type parser from a TypeParserMap. Will throw if no parser is found.
+ * @param options LexiconToZodOptions
+ * @param type Target type
+ * @param strict disable $default parser
+ * @returns LexiconTypeParser
+ */
+export function getTypeParserSafe(
+  options: LexiconToZodOptions,
+  type: string,
+  strict: boolean = false
+) {
+  let parser: LexiconTypeParser | null | undefined =
+    options.typeParserDict?.[type];
+
+  if (!parser) parser = strict ? null : options.typeParserDict?.$default;
+  if (!parser) throw new Error(`Unsupported parser type: ${type}`);
+
+  return parser;
 }
