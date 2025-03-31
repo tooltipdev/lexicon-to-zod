@@ -12,7 +12,7 @@ import {
   refValueToNSID,
   refValueToDefKey,
   getTypeParserSafe,
-  setPathOptionToIsRequired,
+  setPathToOptional,
 } from "./utils";
 import { LexiconToZodOptions, PathOptions, UniversalSchema } from "./types";
 
@@ -36,7 +36,7 @@ export function extendSchema(
   if (lexiconPartial.default)
     lexiconPartialSchema = lexiconPartialSchema.default(lexiconPartial.default);
 
-  if (pathOptions?.isRequired !== true)
+  if (pathOptions?.isOptional === true)
     lexiconPartialSchema = lexiconPartialSchema.optional();
 
   if (pathOptions?.metadata)
@@ -295,11 +295,11 @@ export function toObjectSchema(
       }
 
       if (
-        lexiconPartial.required?.includes(propKey) &&
-        options?.pathOptions?.[propPath]?.isRequired !== false
+        !lexiconPartial.required?.includes(propKey) &&
+        options?.pathOptions?.[propPath]?.isOptional !== false
       ) {
         // Set path option 'isRequired' to true if Lexicon JSON dictates the field is required.
-        setPathOptionToIsRequired(propPath, options);
+        setPathToOptional(propPath, options);
       }
 
       propSchemaMap[propKey] = extendSchema(

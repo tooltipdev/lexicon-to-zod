@@ -236,7 +236,7 @@ const pathOptions = {
   "someDef.someProp: {
     "metadata": {...}, // arbitrary metadata attached to output schema
     "additionalProps": {...}, // additional properties for output 'object' schemas,
-    "isRequired": true // force property to be required
+    "isOptional": true // force property to be optional
   },
   "someOtherDef.someProp: {
     "override": z.string() // override output schema

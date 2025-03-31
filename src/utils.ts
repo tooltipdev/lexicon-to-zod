@@ -16,14 +16,14 @@ import { ZodOptional, ZodSchema } from "zod";
  * @param options existing LexiconToZodOptions
  * @returns LexiconToZodOptions
  */
-export function setPathOptionToIsRequired(
+export function setPathToOptional(
   lexiconPropPath: string,
   options: LexiconToZodOptions
 ): LexiconToZodOptions {
   options.pathOptions = options.pathOptions || {};
   options.pathOptions[lexiconPropPath] =
     options.pathOptions[lexiconPropPath] || {};
-  options.pathOptions[lexiconPropPath].isRequired = true;
+  options.pathOptions[lexiconPropPath].isOptional = true;
 
   return options;
 }

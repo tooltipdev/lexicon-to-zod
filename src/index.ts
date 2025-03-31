@@ -18,7 +18,7 @@ import {
 } from "./parsers";
 
 import { LexiconToZodOptions, TypeParserMap } from "./types";
-import { getTypeParserSafe, setPathOptionToIsRequired } from "./utils";
+import { getTypeParserSafe, setPathToOptional } from "./utils";
 import { z } from "zod";
 
 /**
@@ -98,8 +98,6 @@ export function lexiconToZod(
       continue;
     }
 
-    setPathOptionToIsRequired(defKey, options);
-
     // Note: this is the only place we handle primary types.
     const parser =
       primaryTypeParserMap[
@@ -149,7 +147,6 @@ export function parsers() {
 
         options.pathOptions = options.pathOptions || {};
         options.pathOptions[""] = options.pathOptions[""] || {};
-        options.pathOptions[""].isRequired = true;
 
         return typeParser(lexiconPartial, "", options);
       };

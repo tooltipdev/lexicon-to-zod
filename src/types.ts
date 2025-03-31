@@ -48,8 +48,8 @@ export type PathOptions = {
   metadata?: Record<string, any>;
   // Additional properties added to object Zod schmea.
   additionalProps?: Record<string, UniversalSchema>;
-  // `.isOptional()` will be invoked on Zod schemas if not set to 'true'.
-  isRequired?: boolean;
+  // `.isOptional()` will be invoked on Zod schemas if set to 'true'.
+  isOptional?: boolean;
   [option: string]: any;
 };
 
