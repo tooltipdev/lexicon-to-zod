@@ -1,8 +1,8 @@
 # lexicon-to-zod
 
-Convert Lexicon JSON to Zod schemas.
+Convert [Lexicon](https://atproto.com/guides/lexicon) JSON to [Zod](https://zodjs.netlify.app/) schemas.
 
-Review types and code for information beyond this README.
+Review [types](https://github.com/tooltipdev/lexicon-to-zod/blob/main/src/types.ts) and [code](https://github.com/tooltipdev/lexicon-to-zod/tree/main/src) for information beyond this README.
 
 ## Installation
 
@@ -114,6 +114,9 @@ z.object({
 })
 ```
 
+## LexiconToZodOptions
+Schema generation can be modified via LexiconToZodOptions. These options will be discussed further in this README. The option [type definition](https://github.com/tooltipdev/lexicon-to-zod/blob/main/src/types.ts#L56) can be used as a reference.
+
 ## Managing refs
 
 Some Lexicon types contain references to other Lexicon definitions, for example `ref` type values and `union.refs` values. In these cases, referenced Lexicons need to be gathered to fulfil schema generation, or a placeholder schema will be provided.
@@ -162,7 +165,7 @@ Consider writing your own type parsers or schemas using `z.lazy`.
 
 ### SDK Lexicon Dictionary
 
-You can pass the built-in `@atproto/api` Lexicon map as `lexiconDict` to handle most standard behavior.
+You can pass the `@atproto/api` [Lexicon map](https://github.com/bluesky-social/atproto/blob/main/packages/api/src/client/lexicons.ts#L12) as `lexiconDict` to handle most standard behavior.
 
 #### Install Dependency
 
