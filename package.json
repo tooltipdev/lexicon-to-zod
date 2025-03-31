@@ -19,8 +19,8 @@
     "build": "rollup --config"
   },
   "types": "dist/index.d.ts",
-  "author": "",
-  "license": "ISC",
+  "author": "tooltipdev",
+  "license": "MIT",
   "description": "",
   "devDependencies": {
     "@eslint/js": "^9.22.0",
