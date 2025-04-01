@@ -71,9 +71,9 @@ export type LexiconToZodOptions = {
  * Bespoke nested path structures for targeting Lexicon properties with LexiconToZodOptions.pathOptions.
  */
 
-export type ObjectPath = `${string}.${string}`;
-export type ArrayPath = `${string}.__array__`;
-export type UnionPath = `${string}.__union__.${number}`;
+export type ObjectPath = `${string}.${string}` | "";
+export type ArrayPath = `${string}.__array__` | "__array__";
+export type UnionPath = `${string}.__union__.${number}` | `__union__.${number}`;
 
 /**
  * ATProtocol related types
