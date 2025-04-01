@@ -33,7 +33,7 @@ export function setPathToOptional(
  * @param schema Zod schema
  * @returns ZodSchema
  */
-function parseZodSchemaRootRecursive(
+export function parseZodSchemaRootRecursive(
   schema: ZodSchema | ZodOptional<ZodSchema>
 ) {
   if ((schema as ZodOptional<ZodSchema>)._def.innerType)
@@ -92,7 +92,7 @@ export function refValueToNSID(ref: string): string {
  * @returns ArrayPath
  */
 export function toArrayPath(path: string): ArrayPath {
-  return `${path}.__array__`;
+  return toObjectPath(path, "__array__") as ArrayPath;
 }
 
 /**
@@ -101,8 +101,8 @@ export function toArrayPath(path: string): ArrayPath {
  * @param key New object property key
  * @returns ObjectPath
  */
-export function toObjectPath(path: string, key: string): ObjectPath {
-  return `${path}.${key}`;
+export function toObjectPath(path: string, key: string): ObjectPath | string {
+  return path ? `${path}.${key}` : key;
 }
 
 /**
@@ -112,7 +112,7 @@ export function toObjectPath(path: string, key: string): ObjectPath {
  * @returns UnionPath
  */
 export function toUnionPath(path: string, index: number): UnionPath {
-  return `${path}.__union__.${index}`;
+  return toObjectPath(path, `__union__.${index}`) as UnionPath;
 }
 
 /**
