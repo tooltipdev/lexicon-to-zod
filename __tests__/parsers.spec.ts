@@ -432,10 +432,10 @@ describe("toBooleanSchema", () => {
 });
 
 describe("toBlobRefSchema", () => {
-  let lexiconPartial: Record<string, any>;
+  let input: Record<string, any>;
 
   beforeEach(() => {
-    lexiconPartial = {
+    input = {
       mimeType: "image/png",
       size: 123,
       ref: { $link: "some-link" },
@@ -443,7 +443,7 @@ describe("toBlobRefSchema", () => {
   });
 
   it("should generate the correct schema structure", () => {
-    const schema = toBlobRefSchema(lexiconPartial);
+    const schema = toBlobRefSchema({});
 
     expect((schema as ZodObject<any>).shape).toHaveProperty("$type");
     expect((schema as ZodObject<any>).shape).toHaveProperty("mimeType");
@@ -452,30 +452,30 @@ describe("toBlobRefSchema", () => {
   });
 
   it('should set the default value for $type to "blob"', () => {
-    const schema = toBlobRefSchema(lexiconPartial);
+    const schema = toBlobRefSchema({});
 
-    const result = schema.parse(lexiconPartial);
+    const result = schema.parse(input);
     expect(result.$type).toBe("blob");
   });
 
   it("should require mimeType as a string", () => {
-    const schema = toBlobRefSchema(lexiconPartial);
+    const schema = toBlobRefSchema({});
 
-    expect(() => schema.parse(lexiconPartial)).not.toThrow();
-    expect(() => schema.parse({ ...lexiconPartial, mimeType: 123 })).toThrow();
+    expect(() => schema.parse(input)).not.toThrow();
+    expect(() => schema.parse({ ...input, mimeType: 123 })).toThrow();
   });
 
   it("should coerce size to a number", () => {
-    const schema = toBlobRefSchema(lexiconPartial);
+    const schema = toBlobRefSchema({});
 
-    const result = schema.parse({ ...lexiconPartial, size: "123" });
+    const result = schema.parse({ ...input, size: "123" });
     expect(result.size).toBe(123);
   });
 
   it("should validate the ref object structure", () => {
-    const schema = toBlobRefSchema(lexiconPartial);
+    const schema = toBlobRefSchema({});
 
-    const result = schema.parse(lexiconPartial);
+    const result = schema.parse(input);
 
     expect(result.ref).toHaveProperty("$link");
     expect(result.ref.$link).toBe("some-link");
@@ -776,7 +776,7 @@ describe("toNullSchema", () => {
   let options: LexiconToZodOptions;
 
   beforeEach(() => {
-    lexiconPartial = {}; // null schema has no extra properties to check in lexiconPartial
+    lexiconPartial = {};
     options = { pathOptions: {} };
   });
 
