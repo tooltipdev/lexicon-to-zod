@@ -3,7 +3,14 @@
  * @TODO add support for type properties (min, max, etc)
  */
 
-import { z, ZodOptional, ZodSchema } from "zod";
+import {
+  z,
+  ZodNumber,
+  ZodObject,
+  ZodOptional,
+  ZodSchema,
+  ZodString,
+} from "zod";
 import {
   zodSchemaWrapperMixin,
   toArrayPath,
@@ -13,6 +20,7 @@ import {
   refValueToDefKey,
   getTypeParserSafe,
   setPathToOptional,
+  parseZodSchemaRootRecursive,
 } from "./utils";
 import { LexiconToZodOptions, PathOptions, UniversalSchema } from "./types";
 
@@ -180,11 +188,13 @@ export function toStringSchema(
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
-  const schema = z.string();
+  let schema: UniversalSchema = z.string();
 
-  if (lexiconPartial.minLength) schema.min(lexiconPartial.minLength);
-  if (lexiconPartial.maxLength) schema.max(lexiconPartial.maxLength);
-  if (lexiconPartial.const) schema.default(lexiconPartial.const);
+  if (lexiconPartial.minLength)
+    schema = (schema as ZodString).min(lexiconPartial.minLength);
+  if (lexiconPartial.maxLength)
+    schema = (schema as ZodString).max(lexiconPartial.maxLength);
+  if (lexiconPartial.const) schema = schema.default(lexiconPartial.const);
 
   return extendSchema(
     lexiconPartial,
@@ -198,11 +208,13 @@ export function toNumberSchema(
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
-  const schema = z.number();
+  let schema: UniversalSchema = z.number();
 
-  if (lexiconPartial.minimum) schema.gte(lexiconPartial.minimum);
-  if (lexiconPartial.maximum) schema.lte(lexiconPartial.maximum);
-  if (lexiconPartial.const) schema.default(lexiconPartial.const);
+  if (lexiconPartial.minimum)
+    schema = (schema as ZodNumber).gte(lexiconPartial.minimum);
+  if (lexiconPartial.maximum)
+    schema = (schema as ZodNumber).lte(lexiconPartial.maximum);
+  if (lexiconPartial.const) schema = schema.default(lexiconPartial.const);
 
   return extendSchema(
     lexiconPartial,
@@ -217,9 +229,9 @@ export function toBooleanSchema(
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
-  const schema = z.boolean();
+  let schema: UniversalSchema = z.boolean();
 
-  if (lexiconPartial.const) schema.default(lexiconPartial.const);
+  if (lexiconPartial.const) schema = schema.default(lexiconPartial.const);
 
   return extendSchema(
     lexiconPartial,
@@ -261,10 +273,10 @@ export function toArraySchema(
     options?.pathOptions?.[elementPath]
   );
 
-  const schema = z.array(elementSchema);
+  let schema = z.array(elementSchema);
 
-  if (lexiconPartial.minLength) schema.min(lexiconPartial.minLength);
-  if (lexiconPartial.maxLength) schema.max(lexiconPartial.maxLength);
+  if (lexiconPartial.minLength) schema = schema.min(lexiconPartial.minLength);
+  if (lexiconPartial.maxLength) schema = schema.max(lexiconPartial.maxLength);
 
   return extendSchema(
     lexiconPartial,
@@ -338,10 +350,22 @@ export function toUnionSchema(
       // Omit subtype from union if override is null.
       if (subtypeOverride === null) return acc;
 
-      acc.push(
+      let subtypeSchema =
         subtypeOverride ||
-          getTypeParserSafe(options, 'ref', true)({ type: "ref", ref }, subtypePath, options)
-      );
+        getTypeParserSafe(options, "ref", true)(
+          { type: "ref", ref },
+          subtypePath,
+          options
+        );
+
+      /**
+       * Object subtypes will overlap if strict is not applied.
+       * @TODO add support for discriminated unions
+       */
+      if (parseZodSchemaRootRecursive(subtypeSchema) instanceof ZodObject)
+        subtypeSchema = (subtypeSchema as ZodObject<any>).strict();
+
+      acc.push(subtypeSchema);
 
       return acc;
     },
@@ -368,8 +392,11 @@ export function toRefSchema(
   if (!lexiconDefs) throw new Error("Cannot infer reference Lexicon");
 
   const defKey = refValueToDefKey(lexiconPartial.ref);
+  const def = lexiconDefs[defKey];
 
-  return defToSchema(lexiconDefs[defKey], lexiconPropPath, options);
+  if (!def) throw new Error("Cannot infer reference Lexicon def");
+
+  return defToSchema(def, lexiconPropPath, options);
 }
 
 export function toNullSchema(
@@ -379,7 +406,7 @@ export function toNullSchema(
 ) {
   return extendSchema(
     lexiconPartial,
-    z.never(),
+    z.null(),
     options?.pathOptions?.[lexiconPropPath]
   );
 }
@@ -407,8 +434,10 @@ export function toBytesSchema(
     $bytes: z.string(),
   };
 
-  if (lexiconPartial.minLength) schemaRoot.$bytes.min(lexiconPartial.minLength);
-  if (lexiconPartial.maxLength) schemaRoot.$bytes.max(lexiconPartial.maxLength);
+  if (lexiconPartial.minLength)
+    schemaRoot.$bytes = schemaRoot.$bytes.min(lexiconPartial.minLength);
+  if (lexiconPartial.maxLength)
+    schemaRoot.$bytes = schemaRoot.$bytes.max(lexiconPartial.maxLength);
 
   return extendSchema(
     lexiconPartial,
@@ -424,7 +453,7 @@ export function toUnknownSchema(
 ) {
   return extendSchema(
     lexiconPartial,
-    z.any(),
+    z.unknown(),
     options.pathOptions?.[lexiconPropPath]
   );
 }
