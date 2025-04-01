@@ -7,13 +7,352 @@ import {
   toNullSchema,
   toNumberSchema,
   toObjectSchema,
+  toProcedureSchemaMap,
+  toQuerySchemaMap,
+  toRecordSchemaMap,
   toRefSchema,
   toStringSchema,
+  toSubscriptionSchemaMap,
   toUnionSchema,
   toUnknownSchema,
 } from "../src/parsers";
 import { z, ZodObject } from "zod";
 import { LexiconToZodOptions } from "../src/types";
+
+describe("toRecordSchemaMap", () => {
+  let lexiconPartial: Record<string, any>;
+  let options: LexiconToZodOptions;
+
+  beforeEach(() => {
+    lexiconPartial = {
+      type: "record",
+      key: "sampleKey",
+      record: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          age: { type: "number" },
+        },
+        required: ["name"],
+      },
+    };
+    options = {
+      typeParserDict: {
+        object: toObjectSchema,
+        string: toStringSchema,
+        number: toNumberSchema,
+      },
+    };
+  });
+
+  it("should generate a schema with a literal key", () => {
+    const schema = toRecordSchemaMap(lexiconPartial, "", options);
+    const result = schema.key.parse("sampleKey");
+    expect(result).toEqual("sampleKey");
+  });
+
+  it("should generate a schema with a record object", () => {
+    const schema = toRecordSchemaMap(lexiconPartial, "", options);
+    const result = schema.record.parse({ name: "John", age: 30 });
+    expect(result).toEqual({ name: "John", age: 30 });
+  });
+});
+
+describe("toQuerySchemaMap", () => {
+  let lexiconPartial: Record<string, any>;
+  let options: LexiconToZodOptions;
+
+  beforeEach(() => {
+    lexiconPartial = {
+      parameters: {
+        type: "params",
+        properties: {
+          term: { type: "string" },
+          q: { type: "string" },
+          limit: { type: "integer", minimum: 1, maximum: 100, default: 25 },
+        },
+      },
+      output: {
+        encoding: "application/json",
+        schema: {
+          type: "object",
+          required: ["test"],
+          properties: { cursor: { type: "string" }, num: { type: "integer" } },
+        },
+      },
+    };
+
+    options = {
+      pathOptions: {},
+      typeParserDict: {
+        object: toObjectSchema,
+        string: toStringSchema,
+        integer: toNumberSchema,
+      },
+    };
+  });
+
+  it("should generate a valid query schema map", () => {
+    const schemaMap = toQuerySchemaMap(lexiconPartial, "", options);
+
+    expect(schemaMap).toHaveProperty("parameters");
+    expect(schemaMap).toHaveProperty("output");
+    expect(schemaMap.output).toHaveProperty("encoding");
+    expect(schemaMap.output).toHaveProperty("schema");
+  });
+
+  it("should return a 'never' schema for missing property", () => {
+    lexiconPartial.output = undefined;
+
+    const schemaMap = toQuerySchemaMap(lexiconPartial, "", options);
+
+    expect(schemaMap.output.schema).toBeInstanceOf(z.ZodNever);
+    expect(schemaMap.output.encoding).toBeInstanceOf(z.ZodNever);
+  });
+
+  it("should correctly parse the parameters as an object schema", () => {
+    const schemaMap = toQuerySchemaMap(lexiconPartial, "", options);
+
+    const result = schemaMap.parameters.parse({
+      term: "test",
+      q: "search query",
+      limit: 10,
+    });
+
+    expect(result).toEqual({
+      term: "test",
+      q: "search query",
+      limit: 10,
+    });
+  });
+
+  it("should correctly parse output encoding as literal", () => {
+    const schemaMap = toQuerySchemaMap(lexiconPartial, "", options);
+
+    const result = schemaMap.output.encoding.parse("application/json");
+    expect(result).toBe("application/json");
+  });
+
+  it("shoud correctly parse output schema as object", () => {
+    const schemaMap = toQuerySchemaMap(lexiconPartial, "", options);
+
+    const result = schemaMap.output.schema.parse({
+      cursor: "abc",
+      num: 123,
+    });
+
+    expect(result).toEqual({
+      cursor: "abc",
+      num: 123,
+    });
+  });
+});
+
+describe("toProcedureSchemaMap", () => {
+  let lexiconPartial: Record<string, any>;
+  let options: LexiconToZodOptions;
+
+  beforeEach(() => {
+    lexiconPartial = {
+      parameters: {
+        type: "params",
+        properties: {
+          term: { type: "string" },
+          limit: { type: "integer", minimum: 1, maximum: 100, default: 25 },
+        },
+      },
+      output: {
+        encoding: "application/json",
+        schema: {
+          type: "object",
+          required: ["test"],
+          properties: { cursor: { type: "string" }, num: { type: "integer" } },
+        },
+      },
+      input: {
+        encoding: "application/json",
+        schema: {
+          type: "object",
+          required: ["query"],
+          properties: { query: { type: "string" } },
+        },
+      },
+    };
+
+    options = {
+      pathOptions: {},
+      typeParserDict: {
+        object: toObjectSchema,
+        string: toStringSchema,
+        integer: toNumberSchema,
+      },
+    };
+  });
+
+  it("should generate a valid procedure schema map", () => {
+    const schemaMap = toProcedureSchemaMap(lexiconPartial, "", options);
+
+    expect(schemaMap).toHaveProperty("parameters");
+    expect(schemaMap).toHaveProperty("output");
+    expect(schemaMap).toHaveProperty("input");
+    expect(schemaMap.output).toHaveProperty("encoding");
+    expect(schemaMap.output).toHaveProperty("schema");
+    expect(schemaMap.input).toHaveProperty("encoding");
+    expect(schemaMap.input).toHaveProperty("schema");
+  });
+
+  it("should return a 'never' schema for missing parameters", () => {
+    lexiconPartial.parameters = undefined;
+
+    const schemaMap = toProcedureSchemaMap(lexiconPartial, "", options);
+
+    expect(schemaMap.parameters).toBeInstanceOf(z.ZodNever);
+  });
+
+  it("should correctly parse output encoding as literal", () => {
+    const schemaMap = toProcedureSchemaMap(lexiconPartial, "", options);
+
+    const result = schemaMap.output.encoding.parse("application/json");
+    expect(result).toBe("application/json");
+  });
+
+  it("should correctly parse input encoding as literal", () => {
+    const schemaMap = toProcedureSchemaMap(lexiconPartial, "", options);
+
+    const result = schemaMap.input.encoding.parse("application/json");
+    expect(result).toBe("application/json");
+  });
+
+  it("should correctly parse the output schema as object", () => {
+    const schemaMap = toProcedureSchemaMap(lexiconPartial, "", options);
+
+    const result = schemaMap.output.schema.parse({
+      cursor: "abc",
+      num: 123,
+    });
+
+    expect(result).toEqual({
+      cursor: "abc",
+      num: 123,
+    });
+  });
+
+  it("should correctly parse the input schema as object", () => {
+    const schemaMap = toProcedureSchemaMap(lexiconPartial, "", options);
+
+    const result = schemaMap.input.schema.parse({
+      query: "search query",
+    });
+
+    expect(result).toEqual({
+      query: "search query",
+    });
+  });
+});
+
+describe("toSubscriptionSchemaMap", () => {
+  let lexiconPartial: Record<string, any>;
+  let options: LexiconToZodOptions;
+
+  beforeEach(() => {
+    lexiconPartial = {
+      type: "subscription",
+      parameters: {
+        type: "params",
+        properties: {
+          cursor: {
+            type: "integer",
+          },
+        },
+      },
+      message: {
+        schema: {
+          type: "union",
+          refs: [
+            "com.atproto.label.subscribeLabels",
+            "com.atproto.label.subscribeLabels#info",
+          ],
+        },
+      },
+    };
+
+    options = {
+      pathOptions: {},
+      typeParserDict: {
+        object: toObjectSchema,
+        string: toStringSchema,
+        integer: toNumberSchema,
+        union: toUnionSchema,
+        ref: toRefSchema,
+      },
+      lexiconDict: {
+        "com.atproto.label.subscribeLabels": {
+          defs: {
+            main: {
+              type: "object",
+              properties: {
+                label: { type: "string" },
+              },
+            },
+            info: {
+              type: "object",
+              properties: {
+                info: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+      followRefs: true,
+    };
+  });
+
+  it("should generate a valid subscription schema map", () => {
+    const schemaMap = toSubscriptionSchemaMap(lexiconPartial, "", options);
+
+    expect(schemaMap).toHaveProperty("parameters");
+    expect(schemaMap).toHaveProperty("message");
+    expect(schemaMap.message).toHaveProperty("schema");
+  });
+
+  it("should correctly parse the parameters as an object schema", () => {
+    const schemaMap = toSubscriptionSchemaMap(lexiconPartial, "", options);
+
+    const result = schemaMap.parameters.parse({
+      cursor: 123,
+    });
+
+    expect(result).toEqual({
+      cursor: 123,
+    });
+  });
+
+  it("should be a union type for message.schema", () => {
+    const schemaMap = toSubscriptionSchemaMap(lexiconPartial, "", options);
+
+    expect(schemaMap.message.schema).toBeInstanceOf(z.ZodUnion);
+  });
+
+  it("should handle the case where the 'message.schema' is missing", () => {
+    lexiconPartial.message = undefined;
+
+    const schemaMap = toSubscriptionSchemaMap(lexiconPartial, "", options);
+
+    expect(schemaMap.message.schema).toBeInstanceOf(z.ZodNever);
+  });
+
+  it("should correctly parse a valid subtype input in the union schema", () => {
+    const schemaMap = toSubscriptionSchemaMap(lexiconPartial, "", options);
+
+    const result = schemaMap.message.schema.parse({
+      info: "info data",
+    });
+
+    expect(result).toEqual({
+      info: "info data",
+    });
+  });
+});
 
 describe("toStringSchema", () => {
   it("should convert to z.string()", () => {
