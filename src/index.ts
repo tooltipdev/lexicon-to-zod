@@ -145,9 +145,6 @@ export function parsers() {
           options.typeParserDict || {}
         );
 
-        options.pathOptions = options.pathOptions || {};
-        options.pathOptions[""] = options.pathOptions[""] || {};
-
         return typeParser(lexiconPartial, "", options);
       };
 
