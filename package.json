@@ -22,7 +22,7 @@
   "types": "dist/index.d.ts",
   "author": "tooltipdev",
   "license": "MIT",
-  "description": "",
+  "description": "Convert ATProtocol Lexicons to Zod schemas",
   "devDependencies": {
     "@eslint/js": "^9.22.0",
     "@rollup/plugin-commonjs": "^28.0.3",
