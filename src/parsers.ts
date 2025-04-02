@@ -1,6 +1,6 @@
 /**
  * @TODO add support for coerce to primitives
- * @TODO add support for type properties (min, max, etc)
+ * @TODO review support for type properties (min, max, etc)
  */
 
 import {
@@ -267,11 +267,7 @@ export function toArraySchema(
   options: LexiconToZodOptions = {}
 ) {
   const elementPath = toArrayPath(lexiconPropPath);
-  const elementSchema = extendSchema(
-    lexiconPartial.items,
-    defToSchema(lexiconPartial.items, elementPath, options),
-    options?.pathOptions?.[elementPath]
-  );
+  const elementSchema = defToSchema(lexiconPartial.items, elementPath, options);
 
   let schema = z.array(elementSchema);
 
@@ -314,10 +310,10 @@ export function toObjectSchema(
         setPathToOptional(propPath, options);
       }
 
-      propSchemaMap[propKey] = extendSchema(
+      propSchemaMap[propKey] = defToSchema(
         propPartial as Record<string, any>,
-        defToSchema(propPartial as Record<string, any>, propPath, options),
-        options?.pathOptions?.[propPath]
+        propPath,
+        options
       );
     }
   );

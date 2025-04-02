@@ -2,8 +2,12 @@ import { parsers } from "../src";
 import {
   toNumberSchema,
   toObjectSchema,
+  toProcedureSchemaMap,
+  toQuerySchemaMap,
+  toRecordSchemaMap,
   toRefSchema,
   toStringSchema,
+  toSubscriptionSchemaMap,
   toUnionSchema,
 } from "../src/parsers";
 
@@ -60,7 +64,7 @@ describe("parsers map", () => {
     };
     const schema = parsers().record(lexiconPartial, options);
     const validInput = { name: "John", age: 30 };
-    expect(() => schema.record.parse(validInput)).not.toThrow();
+    expect(() => (schema as ReturnType<typeof toRecordSchemaMap>).record.parse(validInput)).not.toThrow();
   });
 
   it("should validate 'query' schema with valid input", () => {
@@ -83,8 +87,8 @@ describe("parsers map", () => {
     const schema = parsers().query(lexiconPartial, options);
     const validParameters = { term: "search", q: "query" };
     const validOutput = { cursor: "abc", test: "test" };
-    expect(() => schema.parameters.parse(validParameters)).not.toThrow();
-    expect(() => schema.output.schema.parse(validOutput)).not.toThrow();
+    expect(() => (schema as ReturnType<typeof toQuerySchemaMap>).parameters.parse(validParameters)).not.toThrow();
+    expect(() => (schema as ReturnType<typeof toQuerySchemaMap>).output.schema.parse(validOutput)).not.toThrow();
   });
 
   it("should validate 'procedure' schema with valid input", () => {
@@ -112,9 +116,9 @@ describe("parsers map", () => {
     const validParameters = { inputParam: "data" };
     const validOutput = { responseCode: 200 };
     const validInput = { requestData: "request data" };
-    expect(() => schema.parameters.parse(validParameters)).not.toThrow();
-    expect(() => schema.output.schema.parse(validOutput)).not.toThrow();
-    expect(() => schema.input.schema.parse(validInput)).not.toThrow();
+    expect(() => (schema as ReturnType<typeof toProcedureSchemaMap>).parameters.parse(validParameters)).not.toThrow();
+    expect(() => (schema as ReturnType<typeof toProcedureSchemaMap>).output.schema.parse(validOutput)).not.toThrow();
+    expect(() => (schema as ReturnType<typeof toProcedureSchemaMap>).input.schema.parse(validInput)).not.toThrow();
   });
 
   it("should validate 'subscription' schema with valid input", () => {
@@ -136,8 +140,8 @@ describe("parsers map", () => {
     const schema = parsers().subscription(lexiconPartial, options);
     const validParameters = { cursor: 123 };
     const validMessage = { label: "important", test: "test" };
-    expect(() => schema.parameters.parse(validParameters)).not.toThrow();
-    expect(() => schema.message.schema.parse(validMessage)).not.toThrow();
+    expect(() => (schema as ReturnType<typeof toSubscriptionSchemaMap>).parameters.parse(validParameters)).not.toThrow();
+    expect(() => (schema as ReturnType<typeof toSubscriptionSchemaMap>).message.schema.parse(validMessage)).not.toThrow();
   });
 
   it("should validate 'string' schema with valid input", () => {
