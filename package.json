@@ -1,6 +1,6 @@
 {
   "name": "lexicon-to-zod",
-  "version": "1.0.0",
+  "version": "1.0.0-rc.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tooltipdev/lexicon-to-zod.git"
