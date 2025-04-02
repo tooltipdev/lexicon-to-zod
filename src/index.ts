@@ -17,8 +17,12 @@ import {
   toUnknownSchema as toUnknownSchemaParser,
 } from "./parsers";
 
-import { LexiconToZodOptions, TypeParserMap } from "./types";
-import { getTypeParserSafe, setPathToOptional } from "./utils";
+import {
+  LexiconToZodOptions,
+  TypeParserMap,
+  UniversalSchema,
+} from "./types";
+import { getTypeParserSafe } from "./utils";
 import { z } from "zod";
 
 /**
@@ -145,11 +149,17 @@ export function parsers() {
           options.typeParserDict || {}
         );
 
-        return typeParser(lexiconPartial, "", options);
+        return typeParser(lexiconPartial, "", options) as UniversalSchema;
       };
 
       return acc;
     },
-    {} as Record<string, Function>
+    {} as Record<
+      string,
+      (
+        lexiconPartial: Record<string, any>,
+        options?: LexiconToZodOptions
+      ) => UniversalSchema | Record<string, any>
+    >
   );
 }
