@@ -1,6 +1,6 @@
 /**
  * @TODO add support for coerce to primitives
- * @TODO add support for type properties (min, max, etc)
+ * @TODO review support for type properties (min, max, etc)
  */
 
 import {
