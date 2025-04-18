@@ -1,6 +1,10 @@
 {
   "name": "lexicon-to-zod",
-  "version": "1.0.0",
+  "version": "1.0.2",
+  "type": "module",
+  "main": "./dist/bundle.cjs",
+  "module": "./dist/bundle.mjs",
+  "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tooltipdev/lexicon-to-zod.git"
@@ -9,8 +13,14 @@
     "node": "22.x"
   },
   "exports": {
-    "require": "./dist/bundle.cjs.js",
-    "import": "./dist/bundle.esm.js"
+    "import": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/bundle.mjs"
+    },
+    "require": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/bundle.cjs"
+    }
   },
   "files": [
     "dist"
@@ -19,7 +29,6 @@
     "build": "rollup --config",
     "test": "jest"
   },
-  "types": "dist/index.d.ts",
   "author": "tooltipdev",
   "license": "MIT",
   "description": "Convert ATProtocol Lexicons to Zod schemas",
