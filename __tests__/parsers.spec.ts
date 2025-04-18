@@ -330,7 +330,7 @@ describe("toSubscriptionSchemaMap", () => {
   it("should be a union type for message.schema", () => {
     const schemaMap = toSubscriptionSchemaMap(lexiconPartial, "", options);
 
-    expect(schemaMap.message.schema).toBeInstanceOf(z.ZodUnion);
+    expect(schemaMap.message.schema).toBeInstanceOf(z.ZodDiscriminatedUnion);
   });
 
   it("should handle the case where the 'message.schema' is missing", () => {
@@ -345,10 +345,12 @@ describe("toSubscriptionSchemaMap", () => {
     const schemaMap = toSubscriptionSchemaMap(lexiconPartial, "", options);
 
     const result = schemaMap.message.schema.parse({
+      $type: "com.atproto.label.subscribeLabels#info",
       info: "info data",
     });
 
     expect(result).toEqual({
+      $type: "com.atproto.label.subscribeLabels#info",
       info: "info data",
     });
   });
@@ -649,17 +651,27 @@ describe("toUnionSchema", () => {
   it("should generate a union schema from references", () => {
     const schema = toUnionSchema(lexiconPartial, "", options);
 
-    let result = schema.parse({ name: "John", email: "john@example.com" });
+    let result = schema.parse({
+      $type: "com.example.user",
+      name: "John",
+      email: "john@example.com",
+    });
 
-    expect(result).toEqual({ name: "John", email: "john@example.com" });
+    expect(result).toEqual({
+      $type: "com.example.user",
+      name: "John",
+      email: "john@example.com",
+    });
 
     result = schema.parse({
+      $type: "com.example.post",
       title: "foo",
       content: "bar",
       author: { name: "John", email: "john@example.com" },
     });
 
     expect(result).toEqual({
+      $type: "com.example.post",
       title: "foo",
       content: "bar",
       author: { name: "John", email: "john@example.com" },
@@ -669,16 +681,28 @@ describe("toUnionSchema", () => {
   it("should use the override schema if provided", () => {
     options.pathOptions = {
       "__union__.0": {
-        override: z.object({ name: z.string(), email: z.number() }),
+        override: z.object({
+          $type: z.literal("com.example.user"),
+          name: z.string(),
+          email: z.number(),
+        }),
       },
     };
 
     lexiconPartial.refs = ["com.example.user"];
 
     const schema = toUnionSchema(lexiconPartial, "", options);
-    const result = schema.parse({ name: "John", email: 1 });
+    const result = schema.parse({
+      $type: "com.example.user",
+      name: "John",
+      email: 1,
+    });
 
-    expect(result).toEqual({ name: "John", email: 1 });
+    expect(result).toEqual({
+      $type: "com.example.user",
+      name: "John",
+      email: 1,
+    });
   });
 
   it("should omit a subtype from the union if override is null", () => {
@@ -691,14 +715,22 @@ describe("toUnionSchema", () => {
     const schema = toUnionSchema(lexiconPartial, "", options);
 
     expect(() =>
-      schema.parse({ name: "John", email: "john@example.com" })
+      schema.parse({
+        $type: "com.example.user",
+        name: "John",
+        email: "john@example.com",
+      })
     ).not.toThrow();
 
     expect(() =>
       schema.parse({
         title: "Post Title",
         content: "Post Content",
-        author: { name: "John", email: "john@example.com" },
+        author: {
+          $type: "com.example.user",
+          name: "John",
+          email: "john@example.com",
+        },
       })
     ).toThrow();
   });
