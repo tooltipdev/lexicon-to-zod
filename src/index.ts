@@ -19,8 +19,7 @@ import {
 
 import {
   LexiconToZodOptions,
-  TypeParserMap,
-  UniversalSchema,
+  TypeParserMap
 } from "./types";
 import { getTypeParserSafe } from "./utils";
 import { z } from "zod";
@@ -80,7 +79,7 @@ export function lexiconToZod(
   lexicon: Record<string, any>,
   options: LexiconToZodOptions = {}
 ) {
-  const schemaMap: Record<string, any> = { defs: {} };
+  const schemaMap = { defs: {} };
   const typeParserDict = Object.assign(
     {},
     defaultTypeParserMap,
@@ -114,6 +113,41 @@ export function lexiconToZod(
   return schemaMap;
 }
 
+export type TypeParserDictionary = {
+  record: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toRecordSchemaMap>,
+  query: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toQuerySchemaMap>,
+  procedure: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toProcedureSchemaMap>,
+  subscription: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toSubscriptionSchemaMap>,
+  string: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toStringSchema>,
+  integer: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toNumberSchema>,
+  boolean: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toBooleanSchema>,
+  blob: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toBlobRefSchema>,
+  array: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toArraySchema>,
+  object: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toObjectSchema>,
+  union: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toUnionSchema>,
+  ref: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toRefSchema>,
+  null: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toNullSchema>,
+  bytes: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toBytesSchema>,
+  unknown: (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toUnknownSchema>,
+  "cid-link": (lexiconPartial: Record<string, any>,
+    options?: LexiconToZodOptions) => ReturnType<typeof toCidLinkSchema>,
+};
+
 /**
  * Return map of all built-in type parsers.
  * Each type parser is modified to match the interface of `lexiconToZod`.
@@ -139,7 +173,7 @@ export function parsers() {
     "cid-link": toCidLinkSchema,
   }).reduce(
     (acc, [type, typeParser]) => {
-      acc[type] = (
+      (acc as Record<string, any>)[type] = (
         lexiconPartial: Record<string, any>,
         options: LexiconToZodOptions = {}
       ) => {
@@ -149,17 +183,11 @@ export function parsers() {
           options.typeParserDict || {}
         );
 
-        return typeParser(lexiconPartial, "", options) as UniversalSchema;
+        return typeParser(lexiconPartial, "", options);
       };
 
       return acc;
     },
-    {} as Record<
-      string,
-      (
-        lexiconPartial: Record<string, any>,
-        options?: LexiconToZodOptions
-      ) => UniversalSchema | Record<string, any>
-    >
+    {} as TypeParserDictionary
   );
 }
