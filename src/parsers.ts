@@ -6,7 +6,6 @@
 import {
   z,
   ZodNumber,
-  ZodObject,
   ZodOptional,
   ZodSchema,
   ZodString,
@@ -20,7 +19,6 @@ import {
   refValueToDefKey,
   getTypeParserSafe,
   setPathToOptional,
-  parseZodSchemaRootRecursive,
 } from "./utils";
 import { LexiconToZodOptions, PathOptions, UniversalSchema } from "./types";
 
