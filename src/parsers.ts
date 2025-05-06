@@ -306,7 +306,7 @@ export function toObjectSchema(
         !lexiconPartial.required?.includes(propKey) &&
         options?.pathOptions?.[propPath]?.isOptional !== false
       ) {
-        // Set path option 'isRequired' to true if Lexicon JSON dictates the field is required.
+        // Set path option 'isOptional' to true if Lexicon/options don't dictate that the field is required.
         setPathToOptional(propPath, options);
       }
 
@@ -346,6 +346,14 @@ export function toUnionSchema(
       // Omit subtype from union if override is null.
       if (subtypeOverride === null) return acc;
 
+      options.pathOptions = options.pathOptions || {};
+      options.pathOptions[subtypePath] = options.pathOptions[subtypePath] || {};
+      options.pathOptions[subtypePath].additionalProps =
+        options.pathOptions[subtypePath].additionalProps || {};
+      options.pathOptions[subtypePath].additionalProps["$type"] = z.literal(
+        ref.replace("lex:", "")
+      );
+
       let subtypeSchema =
         subtypeOverride ||
         getTypeParserSafe(options, "ref", true)(
@@ -353,13 +361,6 @@ export function toUnionSchema(
           subtypePath,
           options
         );
-
-      /**
-       * Object subtypes will overlap if strict is not applied.
-       * @TODO add support for discriminated unions
-       */
-      if (parseZodSchemaRootRecursive(subtypeSchema) instanceof ZodObject)
-        subtypeSchema = (subtypeSchema as ZodObject<any>).strict();
 
       acc.push(subtypeSchema);
 
@@ -370,7 +371,7 @@ export function toUnionSchema(
 
   return extendSchema(
     lexiconPartial,
-    z.union(subtypeSet),
+    z.discriminatedUnion("$type", subtypeSet),
     options?.pathOptions?.[lexiconPropPath]
   );
 }
