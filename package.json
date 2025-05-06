@@ -1,6 +1,6 @@
 {
   "name": "lexicon-to-zod",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "main": "./dist/bundle.cjs",
   "module": "./dist/bundle.mjs",
