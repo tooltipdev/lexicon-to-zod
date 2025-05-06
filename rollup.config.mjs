@@ -7,12 +7,12 @@ export default {
   external: [/node_modules/],
   output: [
     {
-      file: "dist/bundle.esm.js",
+      file: "dist/bundle.mjs",
       format: "esm",
       sourcemap: true,
     },
     {
-      file: "dist/bundle.cjs.js",
+      file: "dist/bundle.cjs",
       format: "cjs",
       sourcemap: true,
     },
