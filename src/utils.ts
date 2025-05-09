@@ -1,14 +1,14 @@
 import {
   ArrayPath,
+  DiscriminatedParserMap,
   LexiconToZodOptions,
-  LexiconTypeParser,
   ObjectPath,
   UnionPath,
-  WrappedZodOptional,
   WrappedZodSchema,
+  ZodSchemaWrapper,
 } from "./types";
 
-import { ZodOptional, ZodSchema } from "zod";
+import { ZodDefault, ZodOptional, ZodSchema } from "zod";
 
 /**
  * Set a `pathOption[path].isOptional` to `true` for a given path.
@@ -50,9 +50,9 @@ export function parseZodSchemaRootRecursive(
  * @param metadata Metadata to return with ZodSchemaWrapper#meta
  * @returns WrappedSchema
  */
-export function zodSchemaWrapperMixin(
-  schema: ZodSchema | ZodOptional<ZodSchema>,
-  metadata: Record<string, any> = {}
+export function zodSchemaWrapperMixin<T extends ZodSchema>(
+  schema: T | ZodOptional<T> | ZodDefault<T>,
+  metadata: Record<string, unknown> = {}
 ) {
   /**
    * Unpack root schema to attach metadata.
@@ -63,9 +63,9 @@ export function zodSchemaWrapperMixin(
    */
   const targetSchema = parseZodSchemaRootRecursive(schema);
 
-  (targetSchema as WrappedZodSchema<ZodSchema>).meta = () => metadata;
+  (targetSchema as ZodSchemaWrapper & T).meta = () => metadata;
 
-  return schema as WrappedZodSchema<ZodSchema> | WrappedZodOptional<ZodSchema>;
+  return schema as WrappedZodSchema<T>;
 }
 
 /**
@@ -120,15 +120,14 @@ export function toUnionPath(path: string, index: number): UnionPath {
  * @param options LexiconToZodOptions
  * @param type Target type
  * @param strict disable $default parser
- * @returns LexiconTypeParser
+ * @returns Lexicon type parser
  */
-export function getTypeParserSafe(
+export function getTypeParserSafe<T extends keyof DiscriminatedParserMap>(
   options: LexiconToZodOptions,
-  type: string,
+  type: T,
   strict: boolean = false
-) {
-  let parser: LexiconTypeParser | null | undefined =
-    options.typeParserDict?.[type];
+): DiscriminatedParserMap[T] {
+  let parser = options.typeParserDict?.[type] as unknown as DiscriminatedParserMap[T];
 
   if (!parser) parser = strict ? null : options.typeParserDict?.$default;
   if (!parser) throw new Error(`Unsupported parser type: ${type}`);

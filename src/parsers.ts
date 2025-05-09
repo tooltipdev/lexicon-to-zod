@@ -5,10 +5,20 @@
 
 import {
   z,
+  ZodAnyDef,
+  ZodBoolean,
+  ZodDefault,
+  ZodDiscriminatedUnionOption,
+  ZodLiteral,
   ZodNumber,
+  ZodObject,
   ZodOptional,
+  ZodRawShape,
   ZodSchema,
   ZodString,
+  ZodType,
+  ZodTypeAny,
+  ZodTypeDef,
 } from "zod";
 import {
   zodSchemaWrapperMixin,
@@ -20,38 +30,56 @@ import {
   getTypeParserSafe,
   setPathToOptional,
 } from "./utils";
-import { LexiconToZodOptions, PathOptions, UniversalSchema } from "./types";
+import {
+  ArrayPartial,
+  BooleanPartial,
+  BytesPartial,
+  IntegerPartial,
+  LexiconPartial,
+  LexiconToZodOptions,
+  NullPartial,
+  ObjectPartial,
+  PathOptions,
+  ProcedurePartial,
+  QueryPartial,
+  RecordPartial,
+  RefPartial,
+  StringPartial,
+  SubscriptionPartial,
+  UnionPartial,
+  UniversalSchema,
+  WrappedSchema,
+  WrappedZodSchema,
+} from "./types";
 
 /**
  * Apply Lexicon metadata to a UniversalSchema.
  * @param lexiconPartial Lexicon JSON partial
  * @param lexiconPartialSchema Parsed Lexicon Zod schema
  * @param pathOptions pathOptions entry value
- * @returns UniversalSchema
+ * @returns extended Lexicon Zod schema
  */
-export function extendSchema(
-  lexiconPartial: Record<string, any>,
-  lexiconPartialSchema: UniversalSchema,
+export function extendSchema<T extends ZodSchema>(
+  lexiconPartial: LexiconPartial,
+  lexiconPartialSchema: T,
   pathOptions?: PathOptions
-): UniversalSchema {
+) {
+  let schema: T | ZodDefault<T> | ZodOptional<T> | WrappedZodSchema<T> =
+    lexiconPartialSchema;
+
   if (lexiconPartial.description)
-    lexiconPartialSchema = lexiconPartialSchema.describe(
-      lexiconPartial.description
-    );
+    schema = lexiconPartialSchema.describe(lexiconPartial.description);
 
   if (lexiconPartial.default)
-    lexiconPartialSchema = lexiconPartialSchema.default(lexiconPartial.default);
+    schema = lexiconPartialSchema.default(lexiconPartial.default);
 
   if (pathOptions?.isOptional === true)
-    lexiconPartialSchema = lexiconPartialSchema.optional();
+    schema = lexiconPartialSchema.optional();
 
   if (pathOptions?.metadata)
-    lexiconPartialSchema = zodSchemaWrapperMixin(
-      lexiconPartialSchema,
-      pathOptions.metadata
-    );
+    schema = zodSchemaWrapperMixin(lexiconPartialSchema, pathOptions.metadata);
 
-  return lexiconPartialSchema;
+  return schema;
 }
 
 /**
@@ -62,7 +90,7 @@ export function extendSchema(
  * @returns UniversalSchema
  */
 export function defToSchema(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial,
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ): UniversalSchema {
@@ -74,22 +102,20 @@ export function defToSchema(
 }
 
 export function toRecordSchemaMap(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: RecordPartial,
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
   return {
     key: z.literal(lexiconPartial.key),
-    record: getTypeParserSafe(options, "object", true)(
-      lexiconPartial.record,
-      toObjectPath(lexiconPropPath, "record"),
-      options
-    ),
+    record: (
+      getTypeParserSafe(options, "object", true) as typeof toObjectSchema
+    )(lexiconPartial.record, toObjectPath(lexiconPropPath, "record"), options),
   };
 }
 
 export function toQuerySchemaMap(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: QueryPartial,
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
@@ -97,7 +123,7 @@ export function toQuerySchemaMap(
     parameters: !lexiconPartial.parameters
       ? z.never()
       : getTypeParserSafe(options, "object", true)(
-          lexiconPartial.parameters,
+          lexiconPartial.parameters as unknown as ObjectPartial,
           toObjectPath(lexiconPropPath, "parameters"),
           options
         ),
@@ -117,7 +143,7 @@ export function toQuerySchemaMap(
 }
 
 export function toProcedureSchemaMap(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: ProcedurePartial,
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
@@ -125,7 +151,7 @@ export function toProcedureSchemaMap(
     parameters: !lexiconPartial.parameters
       ? z.never()
       : getTypeParserSafe(options, "object", true)(
-          lexiconPartial.parameters,
+          lexiconPartial.parameters as unknown as ObjectPartial,
           toObjectPath(lexiconPropPath, "parameters"),
           options
         ),
@@ -157,7 +183,7 @@ export function toProcedureSchemaMap(
 }
 
 export function toSubscriptionSchemaMap(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: SubscriptionPartial,
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
@@ -165,7 +191,7 @@ export function toSubscriptionSchemaMap(
     parameters: !lexiconPartial.parameters
       ? z.never()
       : getTypeParserSafe(options, "object", true)(
-          lexiconPartial.parameters,
+          lexiconPartial.parameters as unknown as ObjectPartial,
           toObjectPath(lexiconPropPath, "parameters"),
           options
         ),
@@ -182,7 +208,7 @@ export function toSubscriptionSchemaMap(
 }
 
 export function toStringSchema(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: StringPartial,
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
@@ -202,7 +228,7 @@ export function toStringSchema(
 }
 
 export function toNumberSchema(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: IntegerPartial,
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
@@ -223,11 +249,11 @@ export function toNumberSchema(
 }
 
 export function toBooleanSchema(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: BooleanPartial,
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
-  let schema: UniversalSchema = z.boolean();
+  let schema: ZodBoolean | ZodDefault<ZodBoolean> = z.boolean();
 
   if (lexiconPartial.const) schema = schema.default(lexiconPartial.const);
 
@@ -239,7 +265,7 @@ export function toBooleanSchema(
 }
 
 export function toBlobRefSchema(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: LexiconPartial & { type: "blob" },
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
@@ -260,7 +286,7 @@ export function toBlobRefSchema(
 }
 
 export function toArraySchema(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: ArrayPartial,
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
@@ -279,16 +305,20 @@ export function toArraySchema(
   );
 }
 
-export function toObjectSchema(
-  lexiconPartial: Record<string, any>,
+export function toObjectSchema<T extends {properties: Record<string, LexiconPartial>}>(
+  lexiconPartial: T,
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
-  const propSchemaMap: Record<string, any> = {};
+  const propSchemaMap = {} as Record<
+    keyof T["properties"],
+    ReturnType<typeof extendSchema>
+  >;
 
   // @TODO add support for `nullable`
   Object.entries(lexiconPartial.properties).forEach(
-    ([propKey, propPartial]) => {
+    (entry) => {
+      const [propKey, propPartial]: [keyof T['properties'], LexiconPartial] = entry
       const propPath = toObjectPath(lexiconPropPath, propKey);
       const propOverride = options?.pathOptions?.[propPath]?.override;
 
@@ -308,27 +338,19 @@ export function toObjectSchema(
         setPathToOptional(propPath, options);
       }
 
-      propSchemaMap[propKey] = defToSchema(
-        propPartial as Record<string, any>,
-        propPath,
-        options
-      );
+      propSchemaMap[propKey] = defToSchema(propPartial, propPath, options);
     }
   );
 
-  return extendSchema(
-    lexiconPartial,
-    z.object({
-      ...propSchemaMap,
-      // Attach additional schema properties that may not exist in Lexicon JSON.
-      ...(options?.pathOptions?.[lexiconPropPath]?.additionalProps || {}),
-    }),
-    options?.pathOptions?.[lexiconPropPath]
-  );
+  return z.object({
+    ...propSchemaMap,
+    // Attach additional schema properties that may not exist in Lexicon JSON.
+    ...(options?.pathOptions?.[lexiconPropPath]?.additionalProps || {}),
+  });
 }
 
 export function toUnionSchema(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: UnionPartial,
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
@@ -352,7 +374,7 @@ export function toUnionSchema(
         ref.replace("lex:", "")
       );
 
-      let subtypeSchema =
+      const subtypeSchema =
         subtypeOverride ||
         getTypeParserSafe(options, "ref", true)(
           { type: "ref", ref },
@@ -369,19 +391,22 @@ export function toUnionSchema(
 
   return extendSchema(
     lexiconPartial,
-    z.discriminatedUnion("$type", subtypeSet),
+    z.discriminatedUnion(
+      "$type",
+      subtypeSet as [(typeof subtypeSet)[0], ...typeof subtypeSet]
+    ),
     options?.pathOptions?.[lexiconPropPath]
   );
 }
 
 export function toRefSchema(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: RefPartial,
   lexiconPropPath?: string,
   options?: LexiconToZodOptions
 ) {
   if (options?.followRefs !== true) return z.any();
 
-  const lexiconDefs: Record<string, any> | undefined =
+  const lexiconDefs: Record<string, LexiconPartial> | undefined =
     options?.lexiconDict?.[refValueToNSID(lexiconPartial.ref)]?.defs;
 
   if (!lexiconDefs) throw new Error("Cannot infer reference Lexicon");
@@ -395,7 +420,7 @@ export function toRefSchema(
 }
 
 export function toNullSchema(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: NullPartial,
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
@@ -407,7 +432,7 @@ export function toNullSchema(
 }
 
 export function toCidLinkSchema(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: LexiconPartial & { type: "cid-link" },
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
@@ -421,7 +446,7 @@ export function toCidLinkSchema(
 }
 
 export function toBytesSchema(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: BytesPartial,
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {
@@ -442,7 +467,7 @@ export function toBytesSchema(
 }
 
 export function toUnknownSchema(
-  lexiconPartial: Record<string, any>,
+  lexiconPartial: LexiconPartial & { type: "unknown" },
   lexiconPropPath: string = "",
   options: LexiconToZodOptions = {}
 ) {

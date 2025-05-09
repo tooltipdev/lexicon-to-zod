@@ -1,22 +1,39 @@
-import { ZodSchema, ZodOptional, z } from "zod";
+import { ZodSchema, ZodOptional, z, ZodDefault } from "zod";
+import {
+  toArraySchema,
+  toBlobRefSchema,
+  toBooleanSchema,
+  toBytesSchema,
+  toCidLinkSchema,
+  toNullSchema,
+  toNumberSchema,
+  toObjectSchema,
+  toRefSchema,
+  toStringSchema,
+  toUnionSchema,
+  toUnknownSchema,
+} from "./parsers";
 
 // Provide additional functionality to Zod schemas via mixin.
-export type ZodSchemaWrapper = { meta: () => Record<string, any> };
-export type WrappedZodSchema<T extends ZodSchema> = ZodSchemaWrapper & T;
+export type ZodSchemaWrapper = { meta: () => Record<string, unknown> };
+export type WrappedZodSchema<T extends ZodSchema> =
+  | (ZodSchemaWrapper & T)
+  | ZodOptional<ZodSchemaWrapper & T>
+  | ZodDefault<ZodSchemaWrapper & T>;
 
-// Hacky! Using ZodOptional to haphazardly gesture towards Zod schemas with an inner type.
-export type WrappedZodOptional<T extends ZodSchema> = ZodOptional<
-  WrappedZodSchema<T>
->;
+// // Hacky! Using ZodOptional to haphazardly gesture towards Zod schemas with an inner type.
+// export type WrappedZodOptional<T extends ZodSchema> = ZodOptional<
+//   WrappedZodSchema<T>
+// >;
 
-export type WrappedSchema<T extends ZodSchema> =
-  | WrappedZodSchema<T>
-  | WrappedZodOptional<T>;
+// export type WrappedSchema<T extends ZodSchema> =
+//   | WrappedZodSchema<T>
+//   | WrappedZodOptional<T>;
 
 export type UniversalSchema =
   | ZodSchema
   | ZodOptional<ZodSchema>
-  | WrappedSchema<ZodSchema>;
+  | WrappedZodSchema<ZodSchema>;
 
 export type LexiconTypeParser = (
   lexiconPartial: Record<string, any>,
@@ -41,16 +58,46 @@ export type TypeParserMap = {
   [type: string]: LexiconTypeParser;
 };
 
+export type DiscriminatedPartialMap = {
+  boolean: BooleanPartial;
+  integer: IntegerPartial;
+  string: StringPartial;
+  object: ObjectPartial;
+  array: ArrayPartial;
+  union: UnionPartial;
+  ref: RefPartial;
+  null: NullPartial;
+  bytes: BytesPartial;
+  blob: { type: "blob" };
+  unknown: { type: "unknown" };
+  "cid-link": { type: "cid-link" };
+};
+
+export type DiscriminatedParserMap = {
+  boolean: typeof toBooleanSchema;
+  integer: typeof toNumberSchema;
+  string: typeof toStringSchema;
+  blob: typeof toBlobRefSchema;
+  object: typeof toObjectSchema;
+  array: typeof toArraySchema;
+  union: typeof toUnionSchema;
+  ref: typeof toRefSchema;
+  null: typeof toNullSchema;
+  bytes: typeof toBytesSchema;
+  unknown: typeof toUnknownSchema;
+  "cid-link": typeof toCidLinkSchema;
+};
+
 export type PathOptions = {
   // Override Zod schema for target Lexicon property, or provide `null` to omit property.
   override?: UniversalSchema | null;
   // Additional metadata added to Zod schema via mixin.
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   // Additional properties added to object Zod schmea.
   additionalProps?: Record<string, UniversalSchema>;
   // `.isOptional()` will be invoked on Zod schemas if set to 'true'.
   isOptional?: boolean;
-  [option: string]: any;
+  [option: string]: unknown;
 };
 
 export type LexiconToZodOptions = {
@@ -65,6 +112,153 @@ export type LexiconToZodOptions = {
     // The full dot-notated path of the target schema.
     [path: string]: PathOptions;
   };
+};
+
+export type LexiconTypeKey =
+  | "boolean"
+  | "integer"
+  | "string"
+  | "blob"
+  | "object"
+  | "array"
+  | "union"
+  | "ref"
+  | "null"
+  | "bytes"
+  | "unknown"
+  | "query"
+  | "procedure"
+  | "subscription"
+  | "record"
+  | "cid-link"
+  | "params";
+
+export type LexiconPartial = {
+  type: LexiconTypeKey;
+  description?: string;
+  [key: string]: unknown;
+};
+
+export type ObjectPartial<T extends Record<string, LexiconPartial>> = LexiconPartial & {
+  type: "object";
+  properties: T;
+  required?: Array<string>;
+  nullable?: Array<string>;
+};
+
+export type RecordPartial = LexiconPartial & {
+  type: "record";
+  key: string;
+  record: ObjectPartial;
+};
+
+export type ParametersPartial = LexiconPartial & {
+  type: "params";
+  properties: {
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+};
+
+export type ErrorsPartial = Array<{
+  name: string;
+  description?: string;
+  [key: string]: unknown;
+}>;
+
+export type QueryAndProcedurePartial = LexiconPartial & {
+  parameters?: ParametersPartial;
+  output?: {
+    description?: string;
+    encoding: string;
+    schema?: {
+      [key: string]: unknown;
+    };
+  };
+  errors?: ErrorsPartial;
+};
+
+export type QueryPartial = QueryAndProcedurePartial & {
+  type: "query";
+};
+
+export type ProcedurePartial = QueryAndProcedurePartial & {
+  type: "procedure";
+  input?: {
+    description?: string;
+    encoding: string;
+    schema?: {
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+};
+
+export type SubscriptionPartial = LexiconPartial & {
+  type: "subscription";
+  parameters?: ParametersPartial;
+  message?: {
+    description?: string;
+    schema: UnionPartial;
+    [key: string]: unknown;
+  };
+  errors?: ErrorsPartial;
+};
+
+export type NullPartial = {
+  type: "null";
+};
+
+export type BooleanPartial = LexiconPartial & {
+  type: "boolean";
+  default?: boolean;
+  const?: boolean;
+};
+
+export type IntegerPartial = LexiconPartial & {
+  type: "integer";
+  minimum?: number;
+  maximum?: number;
+  enum?: number[];
+  default?: number;
+  const?: number;
+};
+
+export type StringPartial = LexiconPartial & {
+  type: "string";
+  format?: string;
+  maxLength?: number;
+  minLength?: number;
+  maxGraphemes?: number;
+  minGraphemes?: number;
+  knownValues?: string[];
+  enum?: string[];
+  default?: string;
+  const?: string;
+};
+
+export type BytesPartial = LexiconPartial & {
+  type: "bytes";
+  minLength?: number;
+  maxLength?: number;
+};
+
+export type ArrayPartial = LexiconPartial & {
+  type: "array";
+  items: LexiconPartial;
+  minLength?: number;
+  maxLength?: number;
+};
+
+export type RefPartial = LexiconPartial & {
+  type: "ref";
+  ref: string;
+};
+
+export type UnionPartial = LexiconPartial & {
+  type: "union";
+  refs: string[];
+  closed?: boolean;
 };
 
 /**
